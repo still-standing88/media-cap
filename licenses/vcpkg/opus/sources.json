@@ -1,0 +1,28 @@
+[
+  {
+    "name": "opus",
+    "versionInfo": "1.5.2",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/opus",
+    "licenseConcluded": "BSD-3-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "opus:x64-windows-static",
+    "versionInfo": "a9edd67abd4302ec7325d60a1926c8f9d1a0f60ac666a9378d753c46661d7896",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "BSD-3-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "xiph/opus",
+    "downloadLocation": "git+https://github.com/xiph/opus@v1.5.2",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "4ffefd9c035671024f9720c5129bfe395dea04f0d6b730041c2804e89b1db6e4d19633ad1ae58855afc355034233537361e707f26dc53adac916554830038fab"
+      }
+    ]
+  }
+]

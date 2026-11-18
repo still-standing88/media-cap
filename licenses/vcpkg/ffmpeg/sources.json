@@ -1,0 +1,28 @@
+[
+  {
+    "name": "ffmpeg",
+    "versionInfo": "7.1.1#3",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/ffmpeg",
+    "licenseConcluded": "LicenseRef-vcpkg-null",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "ffmpeg:x64-windows-static",
+    "versionInfo": "1d08d56f52cbe407b8a27d9edc193b8250452226e817ac893b111423a1af9ca3",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "LicenseRef-vcpkg-null",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "ffmpeg/ffmpeg",
+    "downloadLocation": "git+https://github.com/ffmpeg/ffmpeg@n7.1.1",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "6b9a5ee501be41d6abc7579a106263b31f787321cbc45dedee97abf992bf8236cdb2394571dd256a74154f4a20018d429ae7e7f0409611ddc4d6f529d924d175"
+      }
+    ]
+  }
+]

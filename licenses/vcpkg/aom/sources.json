@@ -1,0 +1,22 @@
+[
+  {
+    "name": "aom",
+    "versionInfo": "3.11.0",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/aom",
+    "licenseConcluded": "BSD-2-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "aom:x64-windows-static",
+    "versionInfo": "7821b109bf4641e374e844512d0f6ba1bb1242193ed9ef7d133a592c0069e402",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "BSD-2-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "https://aomedia.googlesource.com/aom",
+    "downloadLocation": "git+https://aomedia.googlesource.com/aom@d6f30ae474dd6c358f26de0a0fc26a0d7340a84c",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION"
+  }
+]

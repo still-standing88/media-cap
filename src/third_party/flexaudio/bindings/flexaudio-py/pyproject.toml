@@ -1,0 +1,33 @@
+[build-system]
+requires = ["maturin>=1.9.4,<2"]
+build-backend = "maturin"
+
+[project]
+name = "flexaudio"
+version = "0.8.1"
+description = "Flexible cross-platform audio capture (microphone, system loopback, per-process) for Python, via native bindings to the flexaudio Rust library."
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+authors = [{ name = "tubome (Studio Sadola)" }]
+keywords = ["audio", "capture", "loopback", "recording", "pyo3"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio :: Capture/Recording",
+]
+
+[project.urls]
+Repository = "https://github.com/Studio-Sadola/flexaudio"
+
+# Build with extension-module enabled (do not link libpython directly). It is enabled through a
+# crate feature, so it remains disabled for cargo test (avoiding test binaries that cannot link
+# libpython). The pyo3 features in Cargo.toml (abi3-py38) configure abi3.
+[tool.maturin]
+features = ["extension-module"]
+# Fix the import name as `flexaudio` (matching [lib] name).
+module-name = "flexaudio"
+# LICENSE and the generated third-party notices are shipped through PEP 639 `license-files`, so they
+# land in .dist-info/licenses/ instead of the top of site-packages, where same-named files from other
+# packages would overwrite each other.

@@ -1,0 +1,25 @@
+PROJECT_NAME           = MediaCap
+PROJECT_BRIEF          = "C and C++ media capture API"
+OUTPUT_DIRECTORY       = build-api-docs/doxygen
+INPUT                  = include/MediaCap.hpp include/MediaCap_c.h \
+                         include/MediaCap_audio.h include/MediaCap_types.h \
+                         include/MediaCap_export.h
+FILE_PATTERNS          = *.h *.hpp
+RECURSIVE              = NO
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
+QUIET                  = YES
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+HAVE_DOT               = NO
+SOURCE_BROWSER         = NO
+INLINE_SOURCES         = NO
+FULL_PATH_NAMES        = NO
+MACRO_EXPANSION        = YES
+PREDEFINED             = __cplusplus=201703L MEDIACAP_API=

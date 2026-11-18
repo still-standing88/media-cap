@@ -1,0 +1,34 @@
+# cbindgen config: generate include/flexaudio.h from the flexaudio-ffi C ABI.
+# Generation command: cbindgen --config cbindgen.toml --crate flexaudio-ffi --output include/flexaudio.h
+
+language = "C"
+usize_is_size_t = true
+pragma_once = true
+include_guard = "FLEXAUDIO_H"
+# Also emit Rust doc comments as C header docs.
+documentation = true
+documentation_style = "c99"
+# Add a blank line before functions for readability.
+line_length = 100
+tab_width = 4
+cpp_compat = false
+
+header = """
+/*
+ * flexaudio C API — pull-based audio capture bindings.
+ *
+ * This header is generated from crates/flexaudio-ffi by cbindgen. Do not edit by hand;
+ * regenerate it after changing the Rust ABI.
+ */
+"""
+
+[export]
+prefix = ""
+
+[enum]
+# Emit C enums as `enum { ... }`, matching #[repr(C)] discriminants.
+prefix_with_name = false
+rename_variants = "QualifiedScreamingSnakeCase"
+
+[parse]
+parse_deps = false

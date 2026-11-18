@@ -1,0 +1,12 @@
+{
+  "name": "mediacap-dependencies",
+  "version-string": "1.0.0",
+  "builtin-baseline": "7df0474a7d27e33b43f942324b3f04f243ecc1ef",
+  "dependencies": [
+    {
+      "name": "ffmpeg",
+      "default-features": false,
+      "features": ["avcodec", "avformat", "swresample", "swscale", "aom", "dav1d", "openh264", "opus", "vorbis", "vpx", "mp3lame"]
+    }
+  ]
+}

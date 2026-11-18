@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../bindings/dotnet/MediaCap/MediaCap.csproj"
+                      Condition="'$(MediaCapPackageVersion)' == ''" />
+    <PackageReference Include="MediaCap" Version="$(MediaCapPackageVersion)"
+                      Condition="'$(MediaCapPackageVersion)' != ''" />
+    <None Include="$(MediaCapNativePath)" Link="$([System.IO.Path]::GetFileName('$(MediaCapNativePath)'))"
+          CopyToOutputDirectory="PreserveNewest" Condition="'$(MediaCapNativePath)' != ''" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,155 @@
+name: Windows library and CLI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      build_scope:
+        description: Select the Windows build configurations
+        type: choice
+        default: full
+        options:
+          - full
+          - smoke
+          - arm64-cmake
+          - x64-meson
+  workflow_call:
+    inputs:
+      release_build:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ inputs.release_build && 'release' || 'ci' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    runs-on: ${{ matrix.platform.image }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.build_scope == 'arm64-cmake' && '[{"image":"windows-11-arm","triplet":"arm64-windows-static","arch":"arm64"}]' || inputs.build_scope == 'x64-meson' && '[{"image":"windows-2025","triplet":"x64-windows-static","arch":"amd64"}]' || '[{"image":"windows-2025","triplet":"x64-windows-static","arch":"amd64"},{"image":"windows-11-arm","triplet":"arm64-windows-static","arch":"arm64"}]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: deps
+        with:
+          path: .ci-vcpkg/installed
+          key: vcpkg-v2-${{ matrix.platform.image }}-${{ matrix.platform.triplet }}-tool-2026-10-29-${{ hashFiles('dependencies/vcpkg.json') }}
+      - name: Install the pinned FFmpeg dependencies
+        if: steps.deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        env:
+          VCPKG_TRIPLET: ${{ matrix.platform.triplet }}
+          VS_ARCH: ${{ matrix.platform.arch }}
+          VCPKG_DISABLE_METRICS: '1'
+          VCPKG_BINARY_SOURCES: clear
+          VCPKG_MAX_CONCURRENCY: '2'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $baseline = (Get-Content dependencies/vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          git clone --filter=blob:none https://github.com/microsoft/vcpkg.git .ci-vcpkg
+          git -C .ci-vcpkg checkout --detach $baseline
+          # Match the newer executable with its tool metadata while keeping the ports pinned.
+          git -C .ci-vcpkg restore --source=3d22b64585ca026e881728fd87e541c23a611a43 -- scripts/vcpkg-tools.json
+          $file = if ($env:VS_ARCH -eq 'arm64') { 'vcpkg-arm64.exe' } else { 'vcpkg.exe' }
+          $sha = if ($env:VS_ARCH -eq 'arm64') {
+            'f265afafe091f1414ad619d13ddd01f6be3f01a5c83a011a7cd1426287e4ed16'
+          } else {
+            '191ee64b0887af80aad3eff6c5e888ab733d3ef2182885ed4747b4574c201834'
+          }
+          Invoke-WebRequest "https://github.com/microsoft/vcpkg-tool/releases/download/2026-10-29/$file" -OutFile .ci-vcpkg/vcpkg.exe
+          if ((Get-FileHash .ci-vcpkg/vcpkg.exe -Algorithm SHA256).Hash -ne $sha) {
+            throw 'vcpkg executable checksum mismatch.'
+          }
+          & ./.ci-vcpkg/vcpkg.exe install --x-manifest-root=dependencies --x-install-root=.ci-vcpkg/installed `
+            --triplet=$env:VCPKG_TRIPLET --host-triplet=$env:VCPKG_TRIPLET --clean-after-build
+
+  build:
+    needs: dependencies
+    runs-on: ${{ matrix.platform.image }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.build_scope == 'arm64-cmake' && '[{"image":"windows-11-arm","triplet":"arm64-windows-static","arch":"arm64"}]' || inputs.build_scope == 'x64-meson' && '[{"image":"windows-2025","triplet":"x64-windows-static","arch":"amd64"}]' || '[{"image":"windows-2025","triplet":"x64-windows-static","arch":"amd64"},{"image":"windows-11-arm","triplet":"arm64-windows-static","arch":"arm64"}]') }}
+        frontend: ${{ fromJSON((inputs.release_build || inputs.build_scope == 'arm64-cmake') && '["cmake"]' || inputs.build_scope == 'x64-meson' && '["meson"]' || inputs.build_scope == 'smoke' && '["cmake","meson"]' || '["cmake","meson","scons"]') }}
+        configuration: ${{ fromJSON(inputs.build_scope && inputs.build_scope != 'full' && '["Release"]' || '["Debug","Release"]') }}
+        library: ${{ fromJSON(inputs.build_scope && inputs.build_scope != 'full' && '["static"]' || '["shared","static"]') }}
+        exclude: ${{ fromJSON(inputs.release_build && '[{"configuration":"Debug","library":"static"}]' || inputs.build_scope == 'smoke' && '[{"platform":{"image":"windows-2025","triplet":"x64-windows-static","arch":"amd64"},"frontend":"cmake"},{"platform":{"image":"windows-11-arm","triplet":"arm64-windows-static","arch":"arm64"},"frontend":"meson"}]' || '[]') }}
+    name: ${{ matrix.platform.triplet }} / ${{ matrix.frontend }} / ${{ matrix.configuration }} / ${{ matrix.library }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-vcpkg/installed
+          key: vcpkg-v2-${{ matrix.platform.image }}-${{ matrix.platform.triplet }}-tool-2026-10-29-${{ hashFiles('dependencies/vcpkg.json') }}
+          fail-on-cache-miss: true
+      - name: Set up the native build tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          python -m pip install cmake==4.4.4 meson==1.12.1 ninja==1.13.2 scons==4.11.1 pybind11==3.1.0
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        if: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build }}
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build, test, and check the installed CLI
+        shell: pwsh
+        env:
+          FRONTEND: ${{ matrix.frontend }}
+          CONFIGURATION: ${{ matrix.configuration }}
+          LIBRARY: ${{ matrix.library }}
+          VS_ARCH: ${{ matrix.platform.arch }}
+          VCPKG_TRIPLET: ${{ matrix.platform.triplet }}
+          PYTHON_BINDINGS: ${{ matrix.configuration == 'Release' && !inputs.release_build }}
+          DOTNET_BINDINGS: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build }}
+          LIBRARY_ONLY: ${{ inputs.release_build && matrix.library == 'shared' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $vswhere = "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe"
+          $component = if ($env:VS_ARCH -eq 'arm64') { 'ARM64' } else { 'x86.x64' }
+          $vs = & $vswhere -latest -products '*' -requires "Microsoft.VisualStudio.Component.VC.Tools.$component" -property installationPath
+          if (-not $vs) { throw "Visual Studio tools for $env:VS_ARCH were not found." }
+          & "$vs/Common7/Tools/Launch-VsDevShell.ps1" -Arch $env:VS_ARCH -HostArch $env:VS_ARCH -SkipAutomaticLocation
+          ./scripts/win/ci_windows.ps1 -Frontend $env:FRONTEND -Configuration $env:CONFIGURATION `
+            -Library $env:LIBRARY -VcpkgRoot .ci-vcpkg -Triplet $env:VCPKG_TRIPLET `
+            -LibraryOnly:($env:LIBRARY_ONLY -eq 'true') -PythonBindings:($env:PYTHON_BINDINGS -eq 'true') `
+            -DotNetBindings:($env:DOTNET_BINDINGS -eq 'true')
+      - name: Stage release assets
+        if: inputs.release_build
+        shell: pwsh
+        env:
+          PLATFORM: ${{ matrix.platform.triplet }}
+          CONFIGURATION: ${{ matrix.configuration }}
+          LINKAGE: ${{ matrix.library }}
+        run: python scripts/package_release.py --platform $env:PLATFORM --configuration $env:CONFIGURATION --linkage $env:LINKAGE
+      - name: Upload release assets
+        if: inputs.release_build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ matrix.platform.triplet }}-${{ matrix.configuration }}-${{ matrix.library }}
+          path: build-ci/release-assets/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

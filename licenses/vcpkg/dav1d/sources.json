@@ -1,0 +1,28 @@
+[
+  {
+    "name": "dav1d",
+    "versionInfo": "1.5.1#1",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/dav1d",
+    "licenseConcluded": "BSD-2-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "dav1d:x64-windows-static",
+    "versionInfo": "8f251fea48be5ffdd40e47426ed706c9eacbdd95684abff4db2e7ddc7cb1e4f3",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "BSD-2-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "videolan/dav1d",
+    "downloadLocation": "git+https://github.com/videolan/dav1d@1.5.1",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "96973b59b367bc98fbc8b6c4f871259d9635caf487da86d7f5a4c42715424faf937e7e3f142a3175a7b473c3e945decb03a23e7a854b7c0ff0d11eeb5b692fad"
+      }
+    ]
+  }
+]

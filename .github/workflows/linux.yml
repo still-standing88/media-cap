@@ -1,0 +1,186 @@
+name: Linux library and CLI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      cli_only:
+        description: Build downloadable Release CLI binaries for x64 and ARM64
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      release_build:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ inputs.release_build && 'release' || 'ci' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    runs-on: ${{ matrix.platform.image }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {image: ubuntu-24.04, triplet: x64-linux}
+          - {image: ubuntu-24.04-arm, triplet: arm64-linux}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: deps
+        with:
+          path: .ci-vcpkg/installed
+          key: vcpkg-v1-${{ matrix.platform.image }}-${{ matrix.platform.triplet }}-${{ hashFiles('dependencies/vcpkg.json') }}
+      - name: Install the pinned FFmpeg dependencies
+        if: steps.deps.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          VCPKG_TRIPLET: ${{ matrix.platform.triplet }}
+          VCPKG_DISABLE_METRICS: '1'
+          VCPKG_BINARY_SOURCES: clear
+          VCPKG_MAX_CONCURRENCY: '2'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential autoconf automake libtool pkg-config nasm yasm
+          baseline=$(python3 -c 'import json; print(json.load(open("dependencies/vcpkg.json"))["builtin-baseline"])')
+          git clone --filter=blob:none https://github.com/microsoft/vcpkg.git .ci-vcpkg
+          git -C .ci-vcpkg checkout --detach "$baseline"
+          .ci-vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          .ci-vcpkg/vcpkg install --x-manifest-root=dependencies --x-install-root=.ci-vcpkg/installed \
+            --triplet="$VCPKG_TRIPLET" --host-triplet="$VCPKG_TRIPLET" --clean-after-build
+
+  build:
+    needs: dependencies
+    runs-on: ${{ matrix.platform.image }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {image: ubuntu-24.04, triplet: x64-linux}
+          - {image: ubuntu-24.04-arm, triplet: arm64-linux}
+        frontend: ${{ fromJSON((inputs.cli_only || inputs.release_build) && '["cmake"]' || '["cmake","meson","scons"]') }}
+        configuration: ${{ fromJSON(inputs.cli_only && '["Release"]' || '["Debug","Release"]') }}
+        library: ${{ fromJSON(inputs.cli_only && '["static"]' || '["shared","static"]') }}
+        exclude: ${{ fromJSON(inputs.release_build && '[{"configuration":"Debug","library":"static"}]' || '[]') }}
+    name: ${{ matrix.platform.triplet }} / ${{ matrix.frontend }} / ${{ matrix.configuration }} / ${{ matrix.library }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-vcpkg/installed
+          key: vcpkg-v1-${{ matrix.platform.image }}-${{ matrix.platform.triplet }}-${{ hashFiles('dependencies/vcpkg.json') }}
+          fail-on-cache-miss: true
+      - name: Set up the native build tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config clang libclang-dev linux-libc-dev \
+            libx11-dev libxext-dev libxtst-dev libxfixes-dev libxinerama-dev libasound2-dev libpipewire-0.3-dev
+          python -m pip install cmake==4.4.4 meson==1.12.1 ninja==1.13.2 scons==4.11.1 pybind11==3.1.0
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          cc --version
+          c++ --version
+          rustc --version
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        if: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build && !inputs.cli_only }}
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build, test, and check the installed CLI
+        shell: bash
+        env:
+          FRONTEND: ${{ matrix.frontend }}
+          CONFIGURATION: ${{ matrix.configuration }}
+          LIBRARY: ${{ matrix.library }}
+          VCPKG_TRIPLET: ${{ matrix.platform.triplet }}
+          PYTHON_BINDINGS: ${{ matrix.configuration == 'Release' && !inputs.release_build && !inputs.cli_only }}
+          DOTNET_BINDINGS: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build && !inputs.cli_only }}
+          JOBS: '2'
+          LIBRARY_ONLY: ${{ inputs.release_build && matrix.library == 'shared' }}
+        run: bash scripts/ci_unix.sh
+      - name: Report Linux binary requirements
+        shell: bash
+        run: |
+          shopt -s globstar nullglob
+          for binary in build-ci/package/bin/MediaCap build-ci/package/**/libMediaCap.so; do
+            [[ -f "$binary" ]] || continue
+            printf '\n%s\n' "$binary"
+            readelf --file-header "$binary" | awk '/Class:|Machine:/'
+            readelf --dynamic "$binary" | awk '/NEEDED|RUNPATH/'
+            readelf --version-info "$binary" |
+              awk '/Name: (GLIBC|GLIBCXX|CXXABI)_/ { print $3 }' |
+              sort -Vu
+          done | tee build-ci/runtime-requirements.txt
+      - name: Package the CLI
+        if: inputs.cli_only
+        shell: bash
+        env:
+          PACKAGE: MediaCap-cli-${{ matrix.platform.triplet }}
+        run: |
+          cli=build-ci/package/bin/MediaCap
+          if readelf --dynamic "$cli" | grep -E 'NEEDED.*\[(libMediaCap|libav(codec|format|util)|libsw(scale|resample))'; then
+            echo 'The CLI unexpectedly requires a MediaCap or FFmpeg shared library.' >&2
+            exit 1
+          fi
+          staging="build-ci/$PACKAGE"
+          mkdir -p "$staging/share/licenses"
+          install -m 755 "$cli" "$staging/MediaCap"
+          cp -R build-ci/package/share/licenses/. "$staging/share/licenses/"
+          cp build-ci/runtime-requirements.txt "$staging/"
+          tar -C build-ci -czf "build-ci/$PACKAGE.tar.gz" "$PACKAGE"
+      - name: Upload the CLI archive
+        if: inputs.cli_only
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: MediaCap-cli-${{ matrix.platform.triplet }}
+          path: build-ci/MediaCap-cli-${{ matrix.platform.triplet }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Stage release assets
+        if: inputs.release_build
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform.triplet }}
+          CONFIGURATION: ${{ matrix.configuration }}
+          LINKAGE: ${{ matrix.library }}
+        run: python scripts/package_release.py --platform "$PLATFORM" --configuration "$CONFIGURATION" --linkage "$LINKAGE"
+      - name: Verify the extracted static library
+        if: inputs.release_build && matrix.library == 'static'
+        shell: bash
+        env:
+          ARCH: ${{ matrix.platform.triplet }}
+        run: |
+          stem="MediaCap-library-linux-${ARCH%-linux}-release-static"
+          unpack=$(mktemp -d)
+          tar -xzf "build-ci/release-assets/$stem.tar.gz" -C "$unpack"
+          export PKG_CONFIG_PATH="$unpack/$stem/lib/pkgconfig"
+          read -ra flags <<< "$(pkg-config --static --cflags --libs MediaCap)"
+          c++ tests/integration/installed/smoke.c -o "$unpack/smoke" "${flags[@]}"
+          "$unpack/smoke"
+      - name: Upload release assets
+        if: inputs.release_build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ matrix.platform.triplet }}-${{ matrix.configuration }}-${{ matrix.library }}
+          path: build-ci/release-assets/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

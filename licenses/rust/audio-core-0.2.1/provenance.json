@@ -1,0 +1,5 @@
+{
+  "license_choice": "MIT",
+  "source": "https://raw.githubusercontent.com/udoprog/audio/10489fc46bea493755dcd0195b7d7d605e5b72a8/LICENSE-MIT",
+  "reason": "The published crate omits the workspace license; retrieved at its recorded VCS revision."
+}

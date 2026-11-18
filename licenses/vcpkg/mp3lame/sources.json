@@ -1,0 +1,28 @@
+[
+  {
+    "name": "mp3lame",
+    "versionInfo": "3.100#15",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/mp3lame",
+    "licenseConcluded": "LGPL-2.0-only",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "mp3lame:x64-windows-static",
+    "versionInfo": "3180d9694b0f4e3ec7c3718b026b622bb3831077db6bdfd077afa6006b55f9c8",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "LGPL-2.0-only",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "lame-3.100.tar.gz",
+    "downloadLocation": "https://sourceforge.net/projects/lame/lame/files/3.100/lame-3.100.tar.gz",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "0844b9eadb4aacf8000444621451277de365041cc1d97b7f7a589da0b7a23899310afd4e4d81114b9912aa97832621d20588034715573d417b2923948c08634b"
+      }
+    ]
+  }
+]

@@ -1,0 +1,49 @@
+[package]
+name = "flexaudio-os-windows"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Windows system and per-process audio capture backend (WASAPI loopback) for flexaudio."
+readme = "README.md"
+keywords = ["audio", "wasapi", "loopback", "capture", "windows"]
+categories = ["multimedia::audio", "os::windows-apis"]
+documentation = "https://docs.rs/flexaudio-os-windows"
+
+# Windows-only crate. The backend compiles to an empty module under `#[cfg(target_os = "windows")]`
+# on other platforms, and the windows dependency is included only by the target-specific section below.
+# Pure functions for build-number handling still compile on non-Windows platforms.
+[dev-dependencies]
+flexaudio-core = { path = "../flexaudio-core", version = "0.8.1" }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+flexaudio-core = { path = "../flexaudio-core", version = "0.8.1" }
+
+# Pin windows to =0.54.0 to match cpal (through flexaudio-mic).
+# List the features needed for WASAPI / process loopback / COM / PROPVARIANT explicitly.
+[target.'cfg(target_os = "windows")'.dependencies.windows]
+version = "=0.54.0"
+features = [
+    "implement",
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Threading",
+    # RtlGetVersion (actual build number, not masked by compatibility mode) and OSVERSIONINFOW.
+    "Win32_System_SystemInformation",
+    "Wdk_System_SystemServices",
+    "Win32_System_Variant",
+    "Win32_Media_Audio",
+    "Win32_Media_KernelStreaming",
+    "Win32_Media_Multimedia",
+    # Enumerating output endpoints: property store and FriendlyName key.
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_Devices_FunctionDiscovery",
+]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-pc-windows-msvc", "aarch64-apple-darwin"]

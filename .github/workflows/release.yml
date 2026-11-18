@@ -1,0 +1,102 @@
+name: Publish MediaCap release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-mediacap-release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require the main branch
+        run: test "$GITHUB_REF" = refs/heads/main
+      - name: Check for an existing source tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: v1.0.0
+        run: |
+          if tagged_commit=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha 2>/dev/null); then
+            test "$tagged_commit" = "$GITHUB_SHA"
+          fi
+
+  windows:
+    needs: check
+    uses: ./.github/workflows/windows.yml
+    with:
+      release_build: true
+
+  linux:
+    needs: check
+    uses: ./.github/workflows/linux.yml
+    with:
+      release_build: true
+
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: v1.0.0
+    steps:
+      - name: Download and merge release assets
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Check the asset set
+        shell: bash
+        run: |
+          cd release-assets
+          for os in windows linux; do
+            case "$os" in
+              windows) archive=.zip; exe=.exe ;;
+              linux) archive=.tar.gz; exe= ;;
+            esac
+            for arch in x64 arm64; do
+              for variant in release-shared release-static debug-shared; do
+                test -s "MediaCap-library-$os-$arch-$variant$archive"
+              done
+              test -s "MediaCap-cli-$os-$arch$exe"
+              test -s "MediaCap-cli-$os-$arch-notices.txt"
+            done
+          done
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 20
+      - name: Publish and retain only the latest release
+        shell: bash
+        run: |
+          releases=$(gh api --paginate "repos/$GH_REPO/releases?per_page=100" --jq '.[] | [.tag_name, .draft] | @tsv')
+          if ! tagged_commit=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha); then
+            gh api --method POST "repos/$GH_REPO/git/refs" \
+              -f ref="refs/tags/$RELEASE_TAG" -f sha="$GITHUB_SHA" --silent
+            tagged_commit="$GITHUB_SHA"
+          fi
+          test "$tagged_commit" = "$GITHUB_SHA"
+          if ! grep -Fqx "$RELEASE_TAG"$'\tfalse' <<< "$releases"; then
+            if ! grep -Fqx "$RELEASE_TAG"$'\ttrue' <<< "$releases"; then
+              gh release create "$RELEASE_TAG" --verify-tag --draft \
+                --title "MediaCap ${RELEASE_TAG#v}" --notes "Initial MediaCap release for Windows and Linux."
+            fi
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+            gh release edit "$RELEASE_TAG" --draft=false --latest
+          fi
+          test "$(gh api "repos/$GH_REPO/releases/latest" --jq .tag_name)" = "$RELEASE_TAG"
+          expected_assets=$(find release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
+          actual_assets=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | sort)
+          test "$expected_assets" = "$actual_assets"
+
+          while IFS=$'\t' read -r tag draft; do
+            if [[ -n "$tag" && "$tag" != "$RELEASE_TAG" && "$draft" == false ]]; then
+              gh release delete --yes -- "$tag"
+            fi
+          done <<< "$releases"

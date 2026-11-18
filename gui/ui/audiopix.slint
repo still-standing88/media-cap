@@ -1,0 +1,361 @@
+import { Button, CheckBox, ComboBox, GroupBox, HorizontalBox, LineEdit, Palette, ProgressIndicator,
+         SpinBox, StandardListView, TabWidget, VerticalBox } from "std-widgets.slint";
+
+export struct AudioSettings { rate: int, channels: int, kbps: int, codec: int }
+export struct VideoSettings { width: int, height: int, fps: int, kbps: int, codec: int }
+
+export component AudioPixTray inherits SystemTrayIcon {
+    in property <image> app-icon;
+    in property <bool> recording;
+    in property <bool> paused;
+    callback open();
+    callback start-stop();
+    callback pause-resume();
+    callback exit-app();
+    icon: app-icon;
+    title: "AudioPix";
+    tooltip: paused ? "AudioPix · Paused" : recording ? "AudioPix · Recording" : "AudioPix";
+    clicked => { root.open(); }
+    Menu {
+        MenuItem { title: "Open AudioPix"; activated => { root.open(); } }
+        MenuItem { title: root.recording ? "Stop recording" : "Start recording"; activated => { root.start-stop(); } }
+        MenuItem { title: root.paused ? "Resume recording" : "Pause recording"; enabled: root.recording;
+                   activated => { root.pause-resume(); } }
+        MenuSeparator {}
+        MenuItem { title: "Quit AudioPix"; activated => { root.exit-app(); } }
+    }
+}
+
+export component AudioPixWindow inherits Window {
+    title: "AudioPix";
+    icon: app-icon;
+    preferred-width: 980px;
+    preferred-height: 610px;
+    min-width: 800px;
+    min-height: 540px;
+
+    in property <image> app-icon;
+    in property <[StandardListViewItem]> sessions;
+    in property <[StandardListViewItem]> sources;
+    in-out property <int> session-index: -1;
+    in-out property <int> source-index: -1;
+    in-out property <string> session-name;
+    in property <string> saved-session-name;
+    out property <bool> renaming;
+    function open-rename() {
+        root.session-name = root.saved-session-name;
+        root.renaming = true;
+        rename-dialog.show();
+    }
+    function save-name() {
+        if root.rename-session() { root.close-rename(); }
+    }
+    function close-rename() {
+        root.renaming = false;
+        rename-dialog.close();
+    }
+    changed editor => {
+        if self.editor == 0 { source-dialog.close(); } else { source-dialog.show(); }
+    }
+    in property <bool> recording;
+    in property <bool> paused;
+    in property <bool> busy;
+    in property <string> status: "Ready";
+    in property <int> editor; // 0 closed, 1 add, 2 edit
+    in-out property <int> source-kind;
+    in-out property <int> device-index: -1;
+    in property <[string]> devices;
+    in property <[bool]> device-gains;
+    in property <string> editing-name;
+    in property <bool> editing-gain;
+    property <bool> can-adjust-gain: editor == 2 ? editing-gain :
+        (device-index >= 0 && device-index < device-gains.length && device-gains[device-index]);
+    in-out property <int> capture-fps: 30;
+    in-out property <int> capture-width: 1280;
+    in-out property <int> capture-height: 720;
+    in-out property <int> gain: 100;
+    in property <bool> previewing;
+    in property <bool> audio-preview;
+    in property <image> preview-image;
+    in property <float> preview-level;
+    in-out property <string> output;
+    in-out property <bool> close-to-tray;
+    in-out property <string> start-key;
+    in-out property <string> pause-key;
+    in-out property <string> stop-key;
+    in-out property <AudioSettings> audio;
+    in-out property <VideoSettings> video;
+    in property <bool> locked: recording || busy || previewing;
+    in property <bool> has-source: source-index >= 0 && source-index < sources.length;
+
+    callback select-session(int);
+    callback select-source(int);
+    callback add-session();
+    callback delete-session();
+    callback rename-session() -> bool;
+    callback edit-source(bool);
+    callback delete-source();
+    callback refresh-devices(int);
+    callback save-source();
+    callback dismiss-editor();
+    callback toggle-preview();
+    callback start();
+    callback pause-resume();
+    callback finish(bool);
+    callback save-preferences();
+    callback save-hotkeys();
+
+    VerticalBox {
+        TabWidget {
+            Tab {
+                title: "Session";
+                VerticalBox {
+                    HorizontalBox {
+                        vertical-stretch: 1;
+                        GroupBox {
+                            title: "Sessions";
+                            width: 260px;
+                            VerticalBox {
+                                session-menu := ContextMenuArea {
+                                    vertical-stretch: 1;
+                                    enabled: !root.locked && root.editor == 0 && !root.renaming;
+                                    Menu {
+                                        MenuItem { title: "Add session"; activated => { root.add-session(); } }
+                                        MenuItem { title: "Rename session"; activated => { root.open-rename(); } }
+                                        MenuItem { title: "Delete session"; activated => { root.delete-session(); } }
+                                    }
+                                    StandardListView {
+                                        accessible-label: "Sessions";
+                                        model: root.sessions;
+                                        current-item <=> root.session-index;
+                                        current-item-changed(i) => { root.select-session(i); }
+                                        item-pointer-event(i, event, _) => {
+                                            if event.button == PointerEventButton.right && event.kind == PointerEventKind.down && session-menu.enabled {
+                                                root.select-session(i);
+                                            }
+                                        }
+                                        enabled: session-menu.enabled;
+                                    }
+                                }
+                                Button {
+                                    text: "Session actions";
+                                    enabled: session-menu.enabled;
+                                    clicked => { session-menu.show({ x: 0px, y: session-menu.height }); }
+                                }
+                            }
+                        }
+                        GroupBox {
+                            title: "Capture sources";
+                            horizontal-stretch: 1;
+                            VerticalBox {
+                                source-menu := ContextMenuArea {
+                                    vertical-stretch: 1;
+                                    enabled: !root.busy && !root.recording && root.editor == 0 && !root.renaming;
+                                    Menu {
+                                        MenuItem { title: "Add source"; enabled: !root.locked; activated => { root.edit-source(true); } }
+                                        MenuItem { title: "Edit source"; enabled: !root.locked && root.has-source; activated => { root.edit-source(false); } }
+                                        MenuItem { title: "Delete source"; enabled: !root.locked && root.has-source; activated => { root.delete-source(); } }
+                                        MenuItem { title: root.previewing ? "Stop preview" : "Preview source";
+                                                   enabled: root.has-source; activated => { root.toggle-preview(); } }
+                                    }
+                                    StandardListView {
+                                        accessible-label: "Capture sources";
+                                        model: root.sources;
+                                        current-item <=> root.source-index;
+                                        current-item-changed(i) => { root.select-source(i); }
+                                        item-pointer-event(i, event, _) => {
+                                            if event.button == PointerEventButton.right && event.kind == PointerEventKind.down && !root.locked {
+                                                root.select-source(i);
+                                            }
+                                        }
+                                        enabled: !root.locked;
+                                    }
+                                }
+                                Button {
+                                    text: "Source actions";
+                                    enabled: source-menu.enabled;
+                                    clicked => { source-menu.show({ x: 0px, y: source-menu.height }); }
+                                }
+                                if root.previewing && !root.audio-preview : Image {
+                                    source: root.preview-image;
+                                    image-fit: contain;
+                                    vertical-stretch: 4;
+                                    min-height: 180px;
+                                    accessible-label: "Live video preview";
+                                    accessible-role: image;
+                                }
+                                if root.previewing && root.audio-preview : HorizontalBox {
+                                    Text { text: "Input level " + round(root.preview-level * 100) + "%"; vertical-alignment: center; }
+                                    ProgressIndicator { accessible-label: "Live audio level"; progress: root.preview-level; horizontal-stretch: 1; }
+                                }
+                            }
+                        }
+                    }
+                    HorizontalBox {
+                        Button { text: "Start"; accessible-label: "Start recording"; enabled: !root.locked && root.editor == 0 && !root.renaming && root.sources.length > 0; clicked => { root.start(); } }
+                        Button { text: root.paused ? "Resume" : "Pause"; enabled: root.recording && !root.busy; clicked => { root.pause-resume(); } }
+                        Button { text: "Stop and save"; enabled: root.recording && !root.busy; clicked => { root.finish(false); } }
+                        Button { text: "Cancel recording"; enabled: root.recording && !root.busy; clicked => { root.finish(true); } }
+                        Rectangle { horizontal-stretch: 1; }
+                    }
+                }
+            }
+            Tab {
+                title: "Audio";
+                VerticalBox {
+                    HorizontalBox {
+                        Text { text: "Sample rate (Hz)"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Sample rate in hertz"; enabled: !root.locked; minimum: 8000; maximum: 192000; value <=> root.audio.rate; }
+                        Text { text: "Channels"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Audio channels"; enabled: !root.locked; minimum: 1; maximum: 2; value <=> root.audio.channels; }
+                    }
+                    HorizontalBox {
+                        Text { text: "Bit rate (kbps)"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Audio bit rate in kilobits per second"; enabled: !root.locked; minimum: 8; maximum: 1536; value <=> root.audio.kbps; }
+                        Text { text: "Codec"; vertical-alignment: center; }
+                        ComboBox { accessible-label: "Audio codec"; enabled: !root.locked; model: ["Automatic", "AAC", "Opus", "Vorbis", "FLAC", "MP3", "PCM"]; current-index <=> root.audio.codec; }
+                    }
+                    Button { text: "Save audio settings"; enabled: !root.locked; clicked => { root.save-preferences(); } }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+            Tab {
+                title: "Video";
+                VerticalBox {
+                    HorizontalBox {
+                        Text { text: "Width (px)"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Video width in pixels"; enabled: !root.locked; minimum: 2; maximum: 7680; value <=> root.video.width; }
+                        Text { text: "Height (px)"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Video height in pixels"; enabled: !root.locked; minimum: 2; maximum: 4320; value <=> root.video.height; }
+                    }
+                    HorizontalBox {
+                        Text { text: "Frames per second"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Video frames per second"; enabled: !root.locked; minimum: 1; maximum: 120; value <=> root.video.fps; }
+                        Text { text: "Bit rate (kbps)"; vertical-alignment: center; }
+                        SpinBox { accessible-label: "Video bit rate in kilobits per second"; enabled: !root.locked; minimum: 100; maximum: 100000; value <=> root.video.kbps; }
+                    }
+                    HorizontalBox {
+                        Text { text: "Codec"; vertical-alignment: center; }
+                        ComboBox { accessible-label: "Video codec"; enabled: !root.locked; model: ["Automatic", "H.264", "VP9", "AV1"]; current-index <=> root.video.codec; }
+                    }
+                    Button { text: "Save video settings"; enabled: !root.locked; clicked => { root.save-preferences(); } }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+            Tab {
+                title: "Preferences";
+                VerticalBox {
+                    Text { text: "Output directory"; }
+                    LineEdit { accessible-label: "Output directory"; text <=> root.output; enabled: !root.locked; }
+                    CheckBox { text: "Keep AudioPix in the system tray when I close the window"; checked <=> root.close-to-tray; }
+                    Button { text: "Save preferences"; clicked => { root.save-preferences(); } }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+            Tab {
+                title: "Keyboard Shortcuts";
+                VerticalBox {
+                    Text { text: "Enter a key combination such as Ctrl+Shift+F9. Leave a field blank to disable it."; wrap: word-wrap; }
+                    Text { text: "Start recording"; }
+                    LineEdit { accessible-label: "Start recording shortcut"; text <=> root.start-key; }
+                    Text { text: "Pause or resume recording"; }
+                    LineEdit { accessible-label: "Pause or resume recording shortcut"; text <=> root.pause-key; }
+                    Text { text: "Stop and save recording"; }
+                    LineEdit { accessible-label: "Stop and save recording shortcut"; text <=> root.stop-key; }
+                    Button { text: "Apply global shortcuts"; clicked => { root.save-hotkeys(); } }
+                    Rectangle { vertical-stretch: 1; }
+                }
+            }
+        }
+        Text { text: root.status; accessible-label: root.status; accessible-role: text; wrap: word-wrap; }
+    }
+
+    if root.editor != 0 || root.renaming : Rectangle {
+        background: #0005;
+        TouchArea {}
+    }
+
+    rename-dialog := PopupWindow {
+        width: 420px;
+        height: 160px;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        close-policy: no-auto-close;
+        Rectangle {
+            background: Palette.background;
+            border-color: Palette.border;
+            border-width: 1px;
+        }
+        VerticalBox {
+            Text { text: "Rename session"; font-weight: 650; }
+            LineEdit {
+                accessible-label: "Session name";
+                text <=> root.session-name;
+                accepted => { root.save-name(); }
+                init => { self.focus(); }
+            }
+            HorizontalBox {
+                Button { text: "Save name"; enabled: root.session-name != ""; clicked => { root.save-name(); } }
+                Button { text: "Dismiss"; clicked => { root.close-rename(); } }
+            }
+        }
+    }
+
+    source-dialog := PopupWindow {
+        width: 530px;
+        height: 360px;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        close-policy: no-auto-close;
+        Rectangle {
+            background: Palette.background;
+            border-color: Palette.border;
+            border-width: 1px;
+        }
+        VerticalBox {
+            alignment: LayoutAlignment.start;
+            Text { text: root.editor == 1 ? "Add capture source" : "Edit capture source"; font-weight: 650; }
+            HorizontalBox {
+                Text { text: "Capture type"; vertical-alignment: center; }
+                ComboBox {
+                    accessible-label: "Capture type";
+                    model: ["Video device · Camera", "Video device · Monitor", "Audio device · Input",
+                            "Audio device · Output loopback", "Application · Window", "Application · Process audio"];
+                    current-index <=> root.source-kind;
+                    enabled: root.editor == 1 && !root.busy;
+                    selected => { root.refresh-devices(root.source-kind); }
+                }
+            }
+            if root.editor == 2 : Text { text: "Source · " + root.editing-name; }
+            if root.editor == 1 : HorizontalBox {
+                Text { text: "Source"; vertical-alignment: center; }
+                ComboBox {
+                    accessible-label: "Source";
+                    model: root.devices;
+                    current-index <=> root.device-index;
+                    horizontal-stretch: 1;
+                }
+                Button { text: "Refresh"; accessible-label: "Refresh available sources"; enabled: !root.busy; clicked => { root.refresh-devices(root.source-kind); } }
+            }
+            if root.source-kind == 0 || root.source-kind == 1 || root.source-kind == 4 : HorizontalBox {
+                Text { text: "Capture FPS"; vertical-alignment: center; }
+                SpinBox { accessible-label: "Capture FPS"; minimum: 1; maximum: 120; value <=> root.capture-fps; }
+            }
+            if root.source-kind == 0 : HorizontalBox {
+                Text { text: "Width"; vertical-alignment: center; }
+                SpinBox { accessible-label: "Camera width"; minimum: 2; maximum: 7680; value <=> root.capture-width; }
+                Text { text: "Height"; vertical-alignment: center; }
+                SpinBox { accessible-label: "Camera height"; minimum: 2; maximum: 4320; value <=> root.capture-height; }
+            }
+            if root.can-adjust-gain : HorizontalBox {
+                Text { text: "Gain (%)"; vertical-alignment: center; }
+                SpinBox { accessible-label: "Source gain percent"; minimum: 0; maximum: 300; value <=> root.gain; }
+            }
+            HorizontalBox {
+                Button { text: "Save source"; enabled: !root.busy && (root.editor == 2 || root.device-index >= 0); clicked => { root.save-source(); } }
+                Button { text: "Dismiss"; clicked => { root.dismiss-editor(); } }
+            }
+            Text { text: root.status; wrap: word-wrap; }
+        }
+    }
+}

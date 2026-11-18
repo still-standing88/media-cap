@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PackageId>MediaCap</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Cross-platform MediaCap capture and recording bindings.</Description>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../../COPYING;../../../THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="licenses/" />
+    <None Include="../../../licenses/**/*" Pack="true" PackagePath="licenses/" />
+    <None Include="$(MediaCapNativeAssets)/**/*" Pack="true" PackagePath="runtimes/"
+          Condition="'$(MediaCapNativeAssets)' != ''" />
+    <InternalsVisibleTo Include="MediaCap.Tests" />
+  </ItemGroup>
+</Project>

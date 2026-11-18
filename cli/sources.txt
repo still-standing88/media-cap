@@ -1,0 +1,16 @@
+help/command_help.cpp
+help/guides.cpp
+src/interface/main.cpp
+src/interface/commands.cpp
+src/interface/json_request.cpp
+src/interface/output.cpp
+src/interface/record_options.cpp
+src/logic/discovery.cpp
+src/logic/formats.cpp
+src/logic/frame_sinks.cpp
+src/logic/output_path.cpp
+src/logic/record.cpp
+src/logic/screenshot.cpp
+src/logic/source_inventory.cpp
+src/logic/sources.cpp
+src/platform/discovery_worker.cpp

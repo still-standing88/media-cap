@@ -1,0 +1,112 @@
+name: macOS library and CLI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    runs-on: ${{ matrix.platform.image }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {image: macos-15-intel, triplet: x64-osx}
+          - {image: macos-15, triplet: arm64-osx}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: deps
+        with:
+          path: .ci-vcpkg/installed
+          key: vcpkg-v1-${{ matrix.platform.image }}-${{ matrix.platform.triplet }}-${{ hashFiles('dependencies/vcpkg.json') }}
+      - name: Install the pinned FFmpeg dependencies
+        if: steps.deps.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          VCPKG_TRIPLET: ${{ matrix.platform.triplet }}
+          VCPKG_DISABLE_METRICS: '1'
+          VCPKG_BINARY_SOURCES: clear
+          VCPKG_MAX_CONCURRENCY: '2'
+        run: |
+          xcode-select --print-path
+          xcrun --sdk macosx --show-sdk-path
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install pkgconf autoconf automake libtool
+          if [[ "$VCPKG_TRIPLET" == x64-osx ]]; then
+            # The pinned libaom configure check requires NASM 2.x.
+            archive="$RUNNER_TEMP/nasm-2.16.03-macosx.zip"
+            curl --fail --location --retry 3 --output "$archive" \
+              https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/macosx/nasm-2.16.03-macosx.zip
+            echo "0d29bcd8a5fc617333f4549c7c1f93d1866a4a0915c40359e0a8585bb1a5aa75  $archive" | shasum -a 256 -c -
+            unzip -q "$archive" -d "$RUNNER_TEMP"
+            export PATH="$RUNNER_TEMP/nasm-2.16.03:$PATH"
+            nasm -v
+          fi
+          baseline=$(python3 -c 'import json; print(json.load(open("dependencies/vcpkg.json"))["builtin-baseline"])')
+          git clone --filter=blob:none https://github.com/microsoft/vcpkg.git .ci-vcpkg
+          git -C .ci-vcpkg checkout --detach "$baseline"
+          .ci-vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          .ci-vcpkg/vcpkg install --x-manifest-root=dependencies --x-install-root=.ci-vcpkg/installed \
+            --triplet="$VCPKG_TRIPLET" --host-triplet="$VCPKG_TRIPLET" --clean-after-build
+
+  build:
+    needs: dependencies
+    runs-on: ${{ matrix.platform.image }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {image: macos-15-intel, triplet: x64-osx}
+          - {image: macos-15, triplet: arm64-osx}
+        frontend: [cmake, meson, scons]
+        configuration: [Debug, Release]
+        library: [shared, static]
+    name: ${{ matrix.platform.triplet }} / ${{ matrix.frontend }} / ${{ matrix.configuration }} / ${{ matrix.library }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ci-vcpkg/installed
+          key: vcpkg-v1-${{ matrix.platform.image }}-${{ matrix.platform.triplet }}-${{ hashFiles('dependencies/vcpkg.json') }}
+          fail-on-cache-miss: true
+      - name: Set up the native build tools
+        shell: bash
+        run: |
+          xcode-select --print-path
+          xcrun --sdk macosx --show-sdk-path
+          python -m pip install cmake==4.4.4 meson==1.12.1 ninja==1.13.2 scons==4.11.1 pybind11==3.1.0
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          cc --version
+          c++ --version
+          rustc --version
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        if: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' }}
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build, test, and check the installed CLI
+        shell: bash
+        env:
+          FRONTEND: ${{ matrix.frontend }}
+          CONFIGURATION: ${{ matrix.configuration }}
+          LIBRARY: ${{ matrix.library }}
+          VCPKG_TRIPLET: ${{ matrix.platform.triplet }}
+          PYTHON_BINDINGS: ${{ matrix.configuration == 'Release' }}
+          DOTNET_BINDINGS: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' }}
+          JOBS: '2'
+        run: bash scripts/ci_unix.sh

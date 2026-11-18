@@ -1,0 +1,5 @@
+{
+  "license_choice": "MIT",
+  "source": "https://raw.githubusercontent.com/RustAudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-MIT",
+  "reason": "The published crate omits the repository license; retrieved at its recorded VCS revision."
+}

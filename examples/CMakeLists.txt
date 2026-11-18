@@ -1,0 +1,11 @@
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS targets.txt)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/targets.txt" example_targets)
+foreach(example IN LISTS example_targets)
+    add_executable(${example} "${example}.cpp")
+    target_link_libraries(${example} PRIVATE MediaCap::MediaCap)
+    if(MEDIACAP_BUILD_TESTS)
+        add_test(NAME "example-${example}" COMMAND ${example} --help)
+        set_tests_properties("example-${example}" PROPERTIES LABELS integration TIMEOUT 15
+            PASS_REGULAR_EXPRESSION "Usage:")
+    endif()
+endforeach()

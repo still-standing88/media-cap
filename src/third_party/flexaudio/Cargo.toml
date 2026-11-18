@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/flexaudio-core",
+    "crates/flexaudio-os-windows",
+    "crates/flexaudio-os-macos",
+    "crates/flexaudio-os-linux",
+    "crates/flexaudio-mic",
+    "crates/flexaudio",
+    "crates/flexaudio-cli",
+    "crates/flexaudio-ffi",
+    "crates/flexaudio-napi",
+    "crates/flexaudio-vad",
+    "crates/flexaudio-encode",
+    "crates/flexaudio-denoise",
+    "bindings/flexaudio-py",
+]
+
+[workspace.package]
+version = "0.8.1"
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+repository = "https://github.com/Studio-Sadola/flexaudio"
+authors = ["tubome (Studio Sadola)"]
+
+[workspace.dependencies]
+# Pure Rust dependencies required by flexaudio-core (no system libraries; no runtime network access)
+bitflags = "2"
+ringbuf = "0.4"
+rtrb = "0.3"
+rubato = "3"
+thiserror = "2"
+# Microphone input backend (flexaudio-mic). Use a stable release compatible with Rust 1.85.
+cpal = "0.16"
+# Linux system output capture (flexaudio-os-linux). Requires libpipewire-0.3 + libclang and is included
+# only for target.'cfg(target_os = "linux")' (other platforms do not build against PipeWire).
+pipewire = "0.10"

@@ -1,0 +1,6 @@
+# Keep source and shell scripts portable across Windows, Linux and macOS.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+licenses/rust-runtime/COPYRIGHT-library.html linguist-documentation

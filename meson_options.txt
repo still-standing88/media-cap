@@ -1,0 +1,46 @@
+option('use_vcpkg', 
+  type: 'boolean', 
+  value: true, 
+  description: 'Use vcpkg to find FFmpeg')
+
+option('build_tests', type: 'boolean', value: false,
+  description: 'Build unit and integration tests')
+
+option('build_cli', type: 'boolean', value: false, description: 'Build the MediaCap command-line executable')
+option('build_gui', type: 'boolean', value: false, description: 'Build the AudioPix desktop application')
+option('slint_root', type: 'string', value: '', description: 'External Slint C++ SDK prefix for AudioPix')
+option('build_python', type: 'boolean', value: false, description: 'Build the MediaCap CPython extension')
+option('python_executable', type: 'string', value: '', description: 'Interpreter to build the CPython extension for')
+
+option('flexaudio', type: 'feature', value: 'enabled', description: 'Build vendored Rust system/process/device audio capture')
+option('flexaudio_cargo', type: 'string', value: 'cargo', description: 'Cargo executable')
+option('flexaudio_target', type: 'string', value: '', description: 'Rust target triple (required for cross compilation)')
+option('flexaudio_offline', type: 'boolean', value: false, description: 'Disallow Cargo network access; requires cached dependencies')
+
+option('build_examples', 
+  type: 'boolean', 
+  value: true, 
+  description: 'Build example applications')
+
+option('vcpkg_triplet', 
+  type: 'string', 
+  value: '', 
+  description: 'vcpkg triplet to use (auto-detected if empty)')
+
+option('vcpkg_root', 
+  type: 'string', 
+  value: '', 
+  description: 'Path to vcpkg root (uses VCPKG_ROOT env var if empty)')
+
+option('ffmpeg_include_dir', 
+  type: 'string', 
+  value: '', 
+  description: 'Path to FFmpeg include directory (when not using vcpkg)')
+
+option('ffmpeg_lib_dir', 
+  type: 'string', 
+  value: '', 
+  description: 'Path to FFmpeg library directory (when not using vcpkg)')
+
+option('ffmpeg_debug_lib_dir', type: 'string', value: '',
+  description: 'Optional Debug FFmpeg archive directory when not using vcpkg')

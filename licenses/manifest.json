@@ -1,0 +1,648 @@
+[
+  {
+    "name": "ffmpeg",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "ffmpeg",
+        "versionInfo": "7.1.1#3",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/ffmpeg",
+        "licenseConcluded": "LicenseRef-vcpkg-null",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "ffmpeg:x64-windows-static",
+        "versionInfo": "1d08d56f52cbe407b8a27d9edc193b8250452226e817ac893b111423a1af9ca3",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "LicenseRef-vcpkg-null",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "ffmpeg/ffmpeg",
+        "downloadLocation": "git+https://github.com/ffmpeg/ffmpeg@n7.1.1",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "6b9a5ee501be41d6abc7579a106263b31f787321cbc45dedee97abf992bf8236cdb2394571dd256a74154f4a20018d429ae7e7f0409611ddc4d6f529d924d175"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aom",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "aom",
+        "versionInfo": "3.11.0",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/aom",
+        "licenseConcluded": "BSD-2-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "aom:x64-windows-static",
+        "versionInfo": "7821b109bf4641e374e844512d0f6ba1bb1242193ed9ef7d133a592c0069e402",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-2-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "https://aomedia.googlesource.com/aom",
+        "downloadLocation": "git+https://aomedia.googlesource.com/aom@d6f30ae474dd6c358f26de0a0fc26a0d7340a84c",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION"
+      }
+    ]
+  },
+  {
+    "name": "dav1d",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "dav1d",
+        "versionInfo": "1.5.1#1",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/dav1d",
+        "licenseConcluded": "BSD-2-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "dav1d:x64-windows-static",
+        "versionInfo": "8f251fea48be5ffdd40e47426ed706c9eacbdd95684abff4db2e7ddc7cb1e4f3",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-2-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "videolan/dav1d",
+        "downloadLocation": "git+https://github.com/videolan/dav1d@1.5.1",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "96973b59b367bc98fbc8b6c4f871259d9635caf487da86d7f5a4c42715424faf937e7e3f142a3175a7b473c3e945decb03a23e7a854b7c0ff0d11eeb5b692fad"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "libogg",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "libogg",
+        "versionInfo": "1.3.6",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/libogg",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "libogg:x64-windows-static",
+        "versionInfo": "b1921e908d6d4df612068c0598bded5d65354781619607965623db16075364b3",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "xiph/ogg",
+        "downloadLocation": "git+https://gitlab.xiph.org/xiph/ogg@v1.3.6",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "c41b71a0fcedd97251d01e1a61fd94f6185b2ab0fba96c38e878d354b488b0e9a9a9782674bc06f08c281681c3ddd775be704685d3f6a65131096caa46f261ba"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "libvorbis",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "libvorbis",
+        "versionInfo": "1.3.7#4",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/libvorbis",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "libvorbis:x64-windows-static",
+        "versionInfo": "1b6147a0c0191ed02a6d06815d6417d35834835ba396b7d0ab4471e5e0dde65e",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "xiph/vorbis",
+        "downloadLocation": "git+https://github.com/xiph/vorbis@v1.3.7",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "bfb6f5dbfd49ed38b2b08b3667c06d02e68f649068a050f21a3cc7e1e56b27afd546aaa3199c4f6448f03f6e66a82f9a9dc2241c826d3d1d4acbd38339b9e9fb"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "libvpx",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "libvpx",
+        "versionInfo": "1.15.2",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/libvpx",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "libvpx:x64-windows-static",
+        "versionInfo": "523316d4d4f5e001bdb4857cb326c56401da89df1b3ce0a1626adcedfe2ebc4a",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "webmproject/libvpx",
+        "downloadLocation": "git+https://github.com/webmproject/libvpx@v1.15.2",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "824fe8719e4115ec359ae0642f5e1cea051d458f09eb8c24d60858cf082f66e411215e23228173ab154044bafbdfbb2d93b589bb726f55b233939b91f928aae0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "openh264",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "openh264",
+        "versionInfo": "2.6.0#3",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/openh264",
+        "licenseConcluded": "BSD-2-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "openh264:x64-windows-static",
+        "versionInfo": "2afe11191faa9d3e31b06e79aaa01d790622949ee524a85d0e42ce8189f76fc1",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-2-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "cisco/openh264",
+        "downloadLocation": "git+https://github.com/cisco/openh264@v2.6.0",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "26a03acde7153a6b40b99f00641772433a244c72a3cc4bca6d903cf3b770174d028369a2fb73b2f0774e1124db0e269758eed6d88975347a815e0366c820d247"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "opus",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "opus",
+        "versionInfo": "1.5.2",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/opus",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "opus:x64-windows-static",
+        "versionInfo": "a9edd67abd4302ec7325d60a1926c8f9d1a0f60ac666a9378d753c46661d7896",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "BSD-3-Clause",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "xiph/opus",
+        "downloadLocation": "git+https://github.com/xiph/opus@v1.5.2",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "4ffefd9c035671024f9720c5129bfe395dea04f0d6b730041c2804e89b1db6e4d19633ad1ae58855afc355034233537361e707f26dc53adac916554830038fab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "mp3lame",
+    "ecosystem": "vcpkg",
+    "sources": [
+      {
+        "name": "mp3lame",
+        "versionInfo": "3.100#15",
+        "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/mp3lame",
+        "licenseConcluded": "LGPL-2.0-only",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "mp3lame:x64-windows-static",
+        "versionInfo": "3180d9694b0f4e3ec7c3718b026b622bb3831077db6bdfd077afa6006b55f9c8",
+        "downloadLocation": "NONE",
+        "licenseConcluded": "LGPL-2.0-only",
+        "licenseDeclared": "NOASSERTION"
+      },
+      {
+        "name": "lame-3.100.tar.gz",
+        "downloadLocation": "https://sourceforge.net/projects/lame/lame/files/3.100/lame-3.100.tar.gz",
+        "licenseConcluded": "NOASSERTION",
+        "licenseDeclared": "NOASSERTION",
+        "checksums": [
+          {
+            "algorithm": "SHA512",
+            "checksumValue": "0844b9eadb4aacf8000444621451277de365041cc1d97b7f7a589da0b7a23899310afd4e4d81114b9912aa97832621d20588034715573d417b2923948c08634b"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "anymap3",
+    "version": "1.1.0",
+    "license": "BlueOak-1.0.0 OR MIT OR Apache-2.0",
+    "repository": "https://github.com/reivilibre/anymap3",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "array-init",
+    "version": "2.1.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/Manishearth/array-init/",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "audio-core",
+    "version": "0.2.1",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/udoprog/audio",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "audioadapter",
+    "version": "3.0.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/HEnquist/audioadapter-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "audioadapter-buffers",
+    "version": "3.0.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/HEnquist/audioadapter-buffers-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "audioadapter-sample",
+    "version": "3.0.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/HEnquist/audioadapter-sample-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "autocfg",
+    "version": "1.5.1",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/cuviper/autocfg",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "bitflags",
+    "version": "2.13.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/bitflags/bitflags",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "cfg-if",
+    "version": "1.0.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-lang/cfg-if",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "cpal",
+    "version": "0.16.0",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/rustaudio/cpal",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "crossbeam-utils",
+    "version": "0.8.21",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/crossbeam-rs/crossbeam",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "dasp_sample",
+    "version": "0.11.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rustaudio/sample.git",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "easyfft",
+    "version": "0.4.2",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/WalterSmuts/easyfft",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "generic_singleton",
+    "version": "0.5.3",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/WalterSmuts/generic_singleton",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "lock_api",
+    "version": "0.4.14",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/Amanieu/parking_lot",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "nnnoiseless",
+    "version": "0.5.2",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/jneem/nnnoiseless",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "num-complex",
+    "version": "0.4.6",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-num/num-complex",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "num-integer",
+    "version": "0.1.46",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-num/num-integer",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "num-traits",
+    "version": "0.2.19",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-num/num-traits",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "once_cell",
+    "version": "1.21.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/matklad/once_cell",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "parking_lot",
+    "version": "0.12.5",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/Amanieu/parking_lot",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "parking_lot_core",
+    "version": "0.9.12",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/Amanieu/parking_lot",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "portable-atomic",
+    "version": "1.13.1",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/taiki-e/portable-atomic",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "portable-atomic-util",
+    "version": "0.2.7",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/taiki-e/portable-atomic-util",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "primal-check",
+    "version": "0.3.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/huonw/primal",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "proc-macro2",
+    "version": "1.0.106",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/dtolnay/proc-macro2",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "quote",
+    "version": "1.0.45",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/dtolnay/quote",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "realfft",
+    "version": "3.5.0",
+    "license": "MIT",
+    "repository": "https://github.com/HEnquist/realfft",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "ringbuf",
+    "version": "0.4.8",
+    "license": "MIT/Apache-2.0",
+    "repository": "https://github.com/agerasev/ringbuf.git",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "rtrb",
+    "version": "0.3.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/mgeier/rtrb",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "rubato",
+    "version": "3.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/HEnquist/rubato",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "rustfft",
+    "version": "6.4.1",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/ejmahler/RustFFT",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "scopeguard",
+    "version": "1.2.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/bluss/scopeguard",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "serde",
+    "version": "1.0.228",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/serde-rs/serde",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "serde_core",
+    "version": "1.0.228",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/serde-rs/serde",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "smallvec",
+    "version": "1.15.2",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/servo/rust-smallvec",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "strength_reduce",
+    "version": "0.2.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "http://github.com/ejmahler/strength_reduce",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "syn",
+    "version": "2.0.117",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/dtolnay/syn",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "thiserror",
+    "version": "2.0.18",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/dtolnay/thiserror",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "thiserror-impl",
+    "version": "2.0.18",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/dtolnay/thiserror",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "transpose",
+    "version": "0.2.3",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/ejmahler/transpose",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "unicode-ident",
+    "version": "1.0.24",
+    "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+    "repository": "https://github.com/dtolnay/unicode-ident",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "visibility",
+    "version": "0.1.1",
+    "license": "Zlib OR MIT OR Apache-2.0",
+    "repository": "https://github.com/danielhenrymantilla/visibility.rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windowfunctions",
+    "version": "0.1.1",
+    "license": "MIT",
+    "repository": "https://github.com/HEnquist/windowfunctions-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows",
+    "version": "0.54.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows-core",
+    "version": "0.54.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows-implement",
+    "version": "0.53.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows-interface",
+    "version": "0.53.0",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows-link",
+    "version": "0.2.1",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows-result",
+    "version": "0.1.2",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows-targets",
+    "version": "0.52.6",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
+  {
+    "name": "windows_x86_64_msvc",
+    "version": "0.52.6",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  }
+]

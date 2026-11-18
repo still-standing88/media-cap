@@ -1,0 +1,468 @@
+//! Preprocessing for [`crate::Vad::process_pcm`]. Converts interleaved PCM in any format to mono,
+//! resamples it to the model rate (16000), and prepares it for the existing
+//! 16k/mono path.
+//!
+//! It follows the flexaudio-core normalizer: mono conversion uses a simple average across
+//! channels (L/R average for stereo), and resampling uses rubato sinc with anti-aliasing. The
+//! resampler carries its internal delay and remainder across calls, so split input has no seams.
+
+use rubato::audioadapter_buffers::direct::InterleavedSlice;
+use rubato::{
+    Async, FixedAsync, Indexing, Resampler, SincInterpolationParameters, SincInterpolationType,
+    WindowFunction,
+};
+
+/// Input PCM format descriptor accepted by [`crate::Vad::process_pcm`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PcmFormat {
+    /// Input sample rate (Hz).
+    pub sample_rate: u32,
+    /// Number of input channels (channels in interleaved data).
+    pub channels: u16,
+}
+
+impl PcmFormat {
+    /// Validate supported PCM input rates (8,000–192,000 Hz) and nonzero channels.
+    pub fn validate(self) -> Result<(), crate::InferenceError> {
+        if self.channels == 0 {
+            return Err(crate::InferenceError::InvalidFormat(
+                "channels must be nonzero".into(),
+            ));
+        }
+        if !(8_000..=192_000).contains(&self.sample_rate) {
+            return Err(crate::InferenceError::InvalidFormat(format!(
+                "sample rate must be within 8000..=192000 Hz, got {}",
+                self.sample_rate
+            )));
+        }
+        Ok(())
+    }
+}
+
+/// Preprocessor that downmixes any number of interleaved channels to mono and resamples to the VAD
+/// rate.
+///
+/// The input format ([`PcmFormat`]) and target rate are fixed at construction. If the input rate
+/// matches the target, only mono conversion is performed and no resampler is used.
+pub(crate) struct PcmConverter {
+    channels: usize,
+    /// Sample-rate converter for the target rate. `None` if the input rate matches (mono
+    /// conversion only).
+    resampler: Option<MonoResampler>,
+    /// Remainder of interleaved samples that does not make a full frame. Carry it over and prepend
+    /// it to the next input.
+    remainder: Vec<f32>,
+    /// Scratch buffer for mono-converted samples (reuse allocations).
+    mono: Vec<f32>,
+    #[cfg(test)]
+    fail_conversion: bool,
+}
+
+impl PcmConverter {
+    /// Create a converter from the input format and target rate (the VAD operating rate).
+    ///
+    /// rubato construction can fail for extreme rate ratios, so return an error string for the
+    /// caller to handle without panicking.
+    pub(crate) fn new(format: PcmFormat, target_rate: u32) -> Result<Self, String> {
+        Self::new_with_resampler_chunk(format, target_rate, None, false)
+    }
+
+    /// Use the shared DSP with an integer-centered startup phase for canonical capture.
+    pub(crate) fn new_capture_48k() -> Result<Self, String> {
+        Self::new_with_resampler_chunk(
+            PcmFormat {
+                sample_rate: 48_000,
+                channels: 2,
+            },
+            16_000,
+            None,
+            true,
+        )
+    }
+
+    /// Reuse the sample-aligned capture phase for 48 kHz input, and the same
+    /// sinc converter with its reported group delay for all other input rates.
+    pub(crate) fn new_aligned(format: PcmFormat) -> Result<Self, String> {
+        if format.sample_rate == 48_000 {
+            Self::new_with_resampler_chunk(format, 16_000, None, true)
+        } else {
+            Self::new(format, 16_000)
+        }
+    }
+
+    pub(crate) fn output_delay(&self) -> usize {
+        self.resampler
+            .as_ref()
+            .map_or(0, |resampler| resampler.inner.output_delay())
+    }
+
+    pub(crate) fn input_block(&self) -> usize {
+        self.resampler
+            .as_ref()
+            .map_or(1, |resampler| resampler.chunk_in_frames)
+    }
+
+    fn new_with_resampler_chunk(
+        format: PcmFormat,
+        target_rate: u32,
+        resampler_chunk_in_frames: Option<usize>,
+        capture_phase: bool,
+    ) -> Result<Self, String> {
+        format.validate().map_err(|e| e.to_string())?;
+        let channels = usize::from(format.channels);
+        let resampler = if format.sample_rate == target_rate {
+            None
+        } else {
+            Some(MonoResampler::new_with_phase(
+                format.sample_rate,
+                target_rate,
+                resampler_chunk_in_frames,
+                capture_phase,
+            )?)
+        };
+        Ok(PcmConverter {
+            channels,
+            resampler,
+            remainder: Vec::new(),
+            mono: Vec::new(),
+            #[cfg(test)]
+            fail_conversion: false,
+        })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn fail_conversion(&mut self) {
+        self.fail_conversion = true;
+    }
+
+    /// Downmix interleaved input to mono, resample if needed, and append target-rate mono samples
+    /// to `out`.
+    ///
+    /// Any remainder that does not reach a frame boundary (a multiple of channels) is carried
+    /// internally, so input split at any position produces the same result as a single input.
+    pub(crate) fn convert(
+        &mut self,
+        interleaved: &[f32],
+        out: &mut Vec<f32>,
+    ) -> Result<(), String> {
+        #[cfg(test)]
+        if self.fail_conversion {
+            return Err("injected conversion failure".into());
+        }
+        // Append this input to the previous remainder and downmix only complete frames.
+        self.remainder.extend_from_slice(interleaved);
+        let frames = self.remainder.len() / self.channels;
+        let used = frames * self.channels;
+
+        self.mono.clear();
+        downmix_to_mono(&self.remainder[..used], self.channels, &mut self.mono);
+        self.remainder.drain(..used);
+
+        match &mut self.resampler {
+            None => out.extend_from_slice(&self.mono),
+            Some(rs) => rs.push(&self.mono, out)?,
+        }
+        Ok(())
+    }
+}
+
+/// Downmix `channels` interleaved channels to mono by averaging each frame's channels, then push
+/// the result to `out`.
+///
+/// Stereo uses the L/R average; higher channel counts use the average of all channels. Copy as-is
+/// when `channels <= 1`. `src` must have a length divisible by `channels` (the caller removes any
+/// incomplete frame).
+fn downmix_to_mono(src: &[f32], channels: usize, out: &mut Vec<f32>) {
+    if channels <= 1 {
+        out.extend_from_slice(src);
+        return;
+    }
+    let inv = 1.0 / channels as f32;
+    for frame in src.chunks_exact(channels) {
+        let sum: f32 = frame.iter().sum();
+        out.push(sum * inv);
+    }
+}
+
+/// rubato sinc resampler for mono (one channel). Uses fixed input chunks (`FixedAsync::Input`) and
+/// carries remainders and internal delay across calls.
+///
+/// Parameters match the flexaudio-core normalizer (sinc_len=128 / BlackmanHarris2, etc.).
+struct MonoResampler {
+    inner: Async<f32>,
+    /// Fixed number of input frames rubato requires for one `process` call.
+    chunk_in_frames: usize,
+    /// Maximum output frames that one `process` call can produce.
+    max_out_frames: usize,
+    /// Unprocessed mono input samples.
+    in_accum: Vec<f32>,
+    /// Output scratch for rubato (reused to avoid allocations).
+    out_scratch: Vec<f32>,
+}
+
+impl MonoResampler {
+    fn new_with_phase(
+        in_sr: u32,
+        out_sr: u32,
+        input_chunk_frames: Option<usize>,
+        capture_phase: bool,
+    ) -> Result<Self, String> {
+        let ratio = out_sr as f64 / in_sr as f64;
+        // A fixed input chunk corresponds to 20 ms of input frames (rubato retains any remainder).
+        let chunk_in_frames = input_chunk_frames.unwrap_or_else(|| (in_sr as usize / 50).max(64));
+
+        let params = SincInterpolationParameters {
+            sinc_len: 128,
+            f_cutoff: 0.95,
+            interpolation: SincInterpolationType::Linear,
+            oversampling_factor: 128,
+            window: WindowFunction::BlackmanHarris2,
+        };
+
+        // Only silent initialization may vary the ratio; real capture always uses 1/3.
+        let phase_ratio = 128.0 / 383.0;
+        let ratio_limit = if capture_phase {
+            phase_ratio / ratio
+        } else {
+            1.0
+        };
+        let inner = Async::<f32>::new_sinc(
+            ratio,
+            ratio_limit,
+            &params,
+            chunk_in_frames,
+            1, // mono
+            FixedAsync::Input,
+        )
+        .map_err(|e| format!("rubato sinc resampler construction failed: {e}"))?;
+
+        let max_out_frames = inner.output_frames_max();
+
+        let mut resampler = MonoResampler {
+            inner,
+            chunk_in_frames,
+            max_out_frames,
+            in_accum: Vec::with_capacity(chunk_in_frames * 4),
+            out_scratch: vec![0.0; max_out_frames],
+        };
+        if capture_phase {
+            resampler.align_capture_phase(phase_ratio)?;
+        }
+        Ok(resampler)
+    }
+
+    fn align_capture_phase(&mut self, phase_ratio: f64) -> Result<(), String> {
+        // rubato 3.0.0: init_last_index = -127; each output first advances idx.
+        // make_sincs stores subindex s with center 63 + (s+1)/128. Thus an
+        // integer idx would have a fractional kernel center of 63 + 1/128.
+        // One silent output advances by 383/128, then consumes five input frames:
+        // last_index = -127 + 383/128 - 5 = -129 - 1/128 (exact in binary).
+        // Restore step=3: first real idx = -126 - 1/128, selecting subindex 127,
+        // whose kernel center is exactly 64. Raw q therefore represents -63+3*q.
+        // Trim ceil(63/3)=21 outputs: retained j represents exactly 3*j.
+        // This derives phase from the engine, independently of output_delay's floor.
+        if 1.0 / phase_ratio != 383.0 / 128.0 || self.inner.output_delay() != 21 {
+            return Err("unsupported capture conversion clock".into());
+        }
+        self.inner.set_chunk_size(5).map_err(|e| e.to_string())?;
+        self.inner
+            .set_resample_ratio(phase_ratio, false)
+            .map_err(|e| e.to_string())?;
+        if self.inner.output_frames_next() != 1 {
+            return Err("unsupported capture conversion clock".into());
+        }
+        let mut discarded = Vec::new();
+        self.process_block(&[0.0; 5], &mut discarded)?;
+        self.inner
+            .set_resample_ratio(1.0 / 3.0, false)
+            .map_err(|e| e.to_string())?;
+        self.inner
+            .set_chunk_size(self.chunk_in_frames)
+            .map_err(|e| e.to_string())?;
+        if self.inner.output_delay() != 21 || self.inner.output_frames_next() != 320 {
+            return Err("unsupported capture conversion clock".into());
+        }
+        Ok(())
+    }
+
+    /// Accumulate mono input, resample as many `chunk_in_frames` chunks as possible, and append
+    /// them to `out`. Carry any incomplete remainder in `in_accum` to the next call.
+    fn push(&mut self, mono: &[f32], out: &mut Vec<f32>) -> Result<(), String> {
+        self.in_accum.extend_from_slice(mono);
+        let step = self.chunk_in_frames; // For mono, frame count equals sample count.
+
+        while self.in_accum.len() >= step {
+            // Temporarily move the accumulator so the shared processing method can borrow self.
+            let input = std::mem::take(&mut self.in_accum);
+            let result = self.process_block(&input[..step], out);
+            self.in_accum = input;
+            result?;
+            self.in_accum.drain(..step);
+        }
+        Ok(())
+    }
+
+    fn process_block(&mut self, input: &[f32], out: &mut Vec<f32>) -> Result<(), String> {
+        let in_adapter = InterleavedSlice::new(input, 1, input.len())
+            .map_err(|e| format!("rubato interleaved input adapter failed: {e}"))?;
+        let mut out_adapter =
+            InterleavedSlice::new_mut(&mut self.out_scratch[..], 1, self.max_out_frames)
+                .map_err(|e| format!("rubato interleaved output adapter failed: {e}"))?;
+
+        let indexing = Indexing {
+            input_offset: 0,
+            output_offset: 0,
+            partial_len: None,
+            active_channels_mask: None,
+        };
+
+        let (_in_used, out_written) = self
+            .inner
+            .process_into_buffer(&in_adapter, &mut out_adapter, Some(&indexing))
+            .map_err(|e| format!("rubato process_into_buffer failed: {e}"))?;
+
+        out.extend_from_slice(&self.out_scratch[..out_written]); // Mono.
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f32::consts::PI;
+
+    #[test]
+    fn downmix_stereo_is_lr_average() {
+        // Perfectly inverted phase yields 0; in-phase channels retain their value.
+        let src = [0.5, -0.5, 0.3, 0.3, 1.0, 0.0];
+        let mut out = Vec::new();
+        downmix_to_mono(&src, 2, &mut out);
+        assert_eq!(out, vec![0.0, 0.3, 0.5]);
+    }
+
+    #[test]
+    fn downmix_quad_is_channel_average() {
+        let src = [1.0, 2.0, 3.0, 4.0]; // One 4-channel frame → average 2.5.
+        let mut out = Vec::new();
+        downmix_to_mono(&src, 4, &mut out);
+        assert_eq!(out, vec![2.5]);
+    }
+
+    #[test]
+    fn downmix_mono_is_copy() {
+        let src = [0.1, -0.2, 0.3];
+        let mut out = Vec::new();
+        downmix_to_mono(&src, 1, &mut out);
+        assert_eq!(out, src.to_vec());
+    }
+
+    /// Resampling a sine wave from 48k to 16k preserves its frequency (zero crossings) and
+    /// amplitude (RMS). Measure only the middle to avoid transients.
+    #[test]
+    fn resample_48k_to_16k_preserves_tone() {
+        let mut conv = PcmConverter::new(
+            PcmFormat {
+                sample_rate: 48_000,
+                channels: 1,
+            },
+            16_000,
+        )
+        .unwrap();
+
+        let freq = 440.0_f32;
+        let amp = 0.5_f32;
+        let mut out = Vec::new();
+        // Push two seconds of audio in 441-sample chunks (also checks for seams across chunks).
+        let total = 48_000 * 2;
+        let mut i = 0usize;
+        while i < total {
+            let take = 441.min(total - i);
+            let block: Vec<f32> = (0..take)
+                .map(|k| (2.0 * PI * freq * ((i + k) as f32) / 48_000.0).sin() * amp)
+                .collect();
+            conv.convert(&block, &mut out).unwrap();
+            i += take;
+        }
+        assert!(
+            out.len() >= 16_000,
+            "at least one second of output is required: {}",
+            out.len()
+        );
+
+        // Discard 0.25 seconds at each end (4000 samples) to measure the middle second.
+        let mid = &out[4_000..4_000 + 16_000];
+
+        // Frequency: about 2*440 = 880 zero crossings in 16000 samples.
+        let crossings = zero_crossings(mid);
+        assert!(
+            (876..=884).contains(&crossings),
+            "frequency shifted after resampling to 16k: crossings={crossings}"
+        );
+
+        // Amplitude: a sine wave's RMS is amp/√2 ≈ 0.3536.
+        let got = rms(mid);
+        let expect = amp / std::f32::consts::SQRT_2;
+        assert!(
+            (got - expect).abs() < 0.02,
+            "RMS shifted after resampling to 16k: got={got} expect={expect}"
+        );
+    }
+
+    /// When the sample rate matches the target, no resampler is used (only mono conversion), and
+    /// the downmixed values are returned unchanged.
+    #[test]
+    fn same_rate_stereo_only_downmixes() {
+        let mut conv = PcmConverter::new(
+            PcmFormat {
+                sample_rate: 16_000,
+                channels: 2,
+            },
+            16_000,
+        )
+        .unwrap();
+        assert!(conv.resampler.is_none());
+        let mut out = Vec::new();
+        conv.convert(&[0.5, -0.5, 0.2, 0.2], &mut out).unwrap();
+        assert_eq!(out, vec![0.0, 0.2]);
+    }
+
+    /// Splitting input around a remainder that does not reach a frame boundary (a multiple of
+    /// channels) produces the same mono sequence as processing it all at once.
+    #[test]
+    fn split_across_partial_frame_matches_bulk() {
+        let fmt = PcmFormat {
+            sample_rate: 16_000,
+            channels: 2,
+        };
+        let interleaved: Vec<f32> = (0..2000).map(|i| (i as f32) * 1e-3).collect();
+
+        let mut bulk = Vec::new();
+        PcmConverter::new(fmt, 16_000)
+            .unwrap()
+            .convert(&interleaved, &mut bulk)
+            .unwrap();
+
+        // Process chunks of odd length, splitting across frame boundaries.
+        let mut split = Vec::new();
+        let mut conv = PcmConverter::new(fmt, 16_000).unwrap();
+        for chunk in interleaved.chunks(777) {
+            conv.convert(chunk, &mut split).unwrap();
+        }
+        assert_eq!(bulk, split);
+    }
+
+    fn rms(samples: &[f32]) -> f32 {
+        let sum_sq: f64 = samples.iter().map(|&x| (x as f64) * (x as f64)).sum();
+        (sum_sq / samples.len() as f64).sqrt() as f32
+    }
+
+    fn zero_crossings(samples: &[f32]) -> usize {
+        let mut n = 0;
+        for w in samples.windows(2) {
+            if (w[0] < 0.0 && w[1] >= 0.0) || (w[0] >= 0.0 && w[1] < 0.0) {
+                n += 1;
+            }
+        }
+        n
+    }
+}

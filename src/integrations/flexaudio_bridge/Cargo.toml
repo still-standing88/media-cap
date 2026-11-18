@@ -1,0 +1,18 @@
+[package]
+name = "mediacap-flexaudio"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "LGPL-3.0-or-later"
+
+[lib]
+name = "mediacap_flexaudio"
+crate-type = ["staticlib"]
+
+[dependencies]
+flexaudio = { path = "../../third_party/flexaudio/crates/flexaudio" }
+
+[workspace]
+
+[profile.release]
+panic = "unwind"

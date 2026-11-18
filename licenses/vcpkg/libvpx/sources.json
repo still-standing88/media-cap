@@ -1,0 +1,28 @@
+[
+  {
+    "name": "libvpx",
+    "versionInfo": "1.15.2",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/libvpx",
+    "licenseConcluded": "BSD-3-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "libvpx:x64-windows-static",
+    "versionInfo": "523316d4d4f5e001bdb4857cb326c56401da89df1b3ce0a1626adcedfe2ebc4a",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "BSD-3-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "webmproject/libvpx",
+    "downloadLocation": "git+https://github.com/webmproject/libvpx@v1.15.2",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "824fe8719e4115ec359ae0642f5e1cea051d458f09eb8c24d60858cf082f66e411215e23228173ab154044bafbdfbb2d93b589bb726f55b233939b91f928aae0"
+      }
+    ]
+  }
+]

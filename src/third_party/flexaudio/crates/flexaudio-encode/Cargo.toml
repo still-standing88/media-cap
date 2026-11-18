@@ -1,0 +1,26 @@
+[package]
+name = "flexaudio-encode"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Streaming FLAC encoding sink for recorded audio (pure Rust, fully offline)."
+keywords = ["flac", "audio", "encoder", "lossless", "recording"]
+categories = ["multimedia::audio", "multimedia::encoding", "compression"]
+readme = "README.md"
+documentation = "https://docs.rs/flexaudio-encode"
+
+[dependencies]
+# Pure-Rust FLAC encoder (Apache-2.0). Default features (log/par/serde) support parallel batch
+# encoding and settings serialization, which sequential frame-by-frame encoding does not need.
+# Disable them to avoid pulling in crossbeam-channel / serde / log.
+flacenc = { version = "0.5", default-features = false }
+thiserror = { workspace = true }
+# Canonical f32→s16 quantization: use core's quantize_i16 so all layers share one implementation.
+flexaudio-core = { path = "../flexaudio-core", version = "0.8.1" }
+
+[dev-dependencies]
+# Pure-Rust FLAC decoder (Apache-2.0) for round-trip verification. Tests only.
+claxon = "0.4"

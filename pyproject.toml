@@ -1,0 +1,27 @@
+[build-system]
+requires = ["scikit-build-core>=0.11", "pybind11>=3"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "mediacap"
+version = "1.0.0"
+description = "Native media capture and recording"
+license-files = [
+    "LICENSE",
+    "COPYING",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses/**/*",
+    "src/third_party/screen_capture_lite/LICENSE",
+    "src/third_party/flexaudio/LICENSE",
+    "src/third_party/flexaudio/THIRD_PARTY_NOTICES.md",
+]
+
+[tool.scikit-build]
+minimum-version = "0.11"
+wheel.packages = []
+install.components = ["python"]
+
+[tool.scikit-build.cmake.define]
+MEDIACAP_BUILD_PYTHON = "ON"
+MEDIACAP_BUILD_EXAMPLES = "OFF"
+MEDIACAP_PYTHON_INSTALL_DIR = "."

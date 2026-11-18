@@ -1,0 +1,28 @@
+[
+  {
+    "name": "openh264",
+    "versionInfo": "2.6.0#3",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/openh264",
+    "licenseConcluded": "BSD-2-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "openh264:x64-windows-static",
+    "versionInfo": "2afe11191faa9d3e31b06e79aaa01d790622949ee524a85d0e42ce8189f76fc1",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "BSD-2-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "cisco/openh264",
+    "downloadLocation": "git+https://github.com/cisco/openh264@v2.6.0",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "26a03acde7153a6b40b99f00641772433a244c72a3cc4bca6d903cf3b770174d028369a2fb73b2f0774e1124db0e269758eed6d88975347a815e0366c820d247"
+      }
+    ]
+  }
+]

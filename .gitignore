@@ -1,0 +1,43 @@
+# Local archives, tools, environments and assistant configuration.
+/.local/
+/.claude/
+/.agents/
+/.codex/
+/cli/TODO.md
+/.tools/
+/.venv*/
+/.ci-vcpkg/
+/vcpkg_installed/
+
+# Build, staging and release output.
+/build/
+/build-*/
+/build_*/
+!/build_support/
+/dist/
+/release/
+/releases/
+/stage/
+target/
+node_modules/
+/.sconsign.dblite
+/config.log
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.so
+*.so.*
+*.dylib
+*.exe
+*.exp
+*.pdb
+*.ilk
+
+# Python caches and IDE state.
+__pycache__/
+*.py[cod]
+.vs/
+*.suo
+*.user

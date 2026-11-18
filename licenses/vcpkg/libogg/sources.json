@@ -1,0 +1,28 @@
+[
+  {
+    "name": "libogg",
+    "versionInfo": "1.3.6",
+    "downloadLocation": "git+https://github.com/Microsoft/vcpkg#ports/libogg",
+    "licenseConcluded": "BSD-3-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "libogg:x64-windows-static",
+    "versionInfo": "b1921e908d6d4df612068c0598bded5d65354781619607965623db16075364b3",
+    "downloadLocation": "NONE",
+    "licenseConcluded": "BSD-3-Clause",
+    "licenseDeclared": "NOASSERTION"
+  },
+  {
+    "name": "xiph/ogg",
+    "downloadLocation": "git+https://gitlab.xiph.org/xiph/ogg@v1.3.6",
+    "licenseConcluded": "NOASSERTION",
+    "licenseDeclared": "NOASSERTION",
+    "checksums": [
+      {
+        "algorithm": "SHA512",
+        "checksumValue": "c41b71a0fcedd97251d01e1a61fd94f6185b2ab0fba96c38e878d354b488b0e9a9a9782674bc06f08c281681c3ddd775be704685d3f6a65131096caa46f261ba"
+      }
+    ]
+  }
+]
