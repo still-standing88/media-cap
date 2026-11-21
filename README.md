@@ -30,7 +30,7 @@ MediaCap is available as a library with its own API, as a CLI tool, and as the A
 
 ## Downloads
 
-Downloads will be available from the [latest release](https://github.com/still-standing88/media-cap/releases/latest) when the public release is ready. Choose the asset for your CPU architecture.
+Download Windows and Linux builds from the [latest release](https://github.com/still-standing88/media-cap/releases/latest). Choose the asset for your CPU architecture.
 
 The CLI downloads are direct executables (`.exe` on Windows), with MediaCap and FFmpeg linked statically. On Linux, mark the downloaded file executable with `chmod +x MediaCap-cli-linux-x64` or `chmod +x MediaCap-cli-linux-arm64`.
 
