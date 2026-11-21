@@ -61,7 +61,11 @@ jobs:
           git clone --filter=blob:none https://github.com/microsoft/vcpkg.git .ci-vcpkg
           git -C .ci-vcpkg checkout --detach $baseline
           # Match the newer executable with its tool metadata while keeping the ports pinned.
-          git -C .ci-vcpkg restore --source=3d22b64585ca026e881728fd87e541c23a611a43 -- scripts/vcpkg-tools.json
+          Invoke-WebRequest 'https://raw.githubusercontent.com/microsoft/vcpkg/3d22b64585ca026e881728fd87e541c23a611a43/scripts/vcpkg-tools.json' `
+            -OutFile .ci-vcpkg/scripts/vcpkg-tools.json
+          if ((Get-FileHash .ci-vcpkg/scripts/vcpkg-tools.json -Algorithm SHA256).Hash -ne '066f6e840d6a8deb0aa27c27abbed69574990b8e281021ae0930f439622e8aec') {
+            throw 'vcpkg tool metadata checksum mismatch.'
+          }
           $file = if ($env:VS_ARCH -eq 'arm64') { 'vcpkg-arm64.exe' } else { 'vcpkg.exe' }
           $sha = if ($env:VS_ARCH -eq 'arm64') {
             'f265afafe091f1414ad619d13ddd01f6be3f01a5c83a011a7cd1426287e4ed16'
