@@ -1,0 +1,14 @@
+Backport of https://github.com/videolan/dav1d/commit/a34e0685b9111b9eb1d7835ea7bea5b425dced73
+compat: Fix building with newer versions of MSVC
+
+diff --git a/include/compat/msvc/stdatomic.h b/include/compat/msvc/stdatomic.h
+--- a/include/compat/msvc/stdatomic.h
++++ b/include/compat/msvc/stdatomic.h
+@@ -35,3 +35,7 @@
++#ifndef __has_include_next
++#define __has_include_next(x) 0
++#endif
++
+ #if defined(__clang__) && __has_include_next(<stdatomic.h>)
+    /* use the clang stdatomic.h with clang-cl*/
+ #  include_next <stdatomic.h>

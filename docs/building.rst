@@ -48,6 +48,12 @@ for x64 or ``arm64-windows-static`` for ARM64. Debug links against ``/MTd``
 and Release against ``/MT``. Select FFmpeg archives built with the same runtime
 as MediaCap.
 
+When installing the pinned dependency manifest on Windows, add
+``--overlay-ports=dependencies/windows-ports`` to the ``vcpkg install`` command.
+This applies dav1d's upstream preprocessor compatibility fix for MSVC 19.52
+while retaining the pinned codec versions. The Windows workflow includes
+this option automatically.
+
 .. code-block:: powershell
 
    .\build.ps1 --frontend cmake --release --shared --cli
@@ -194,6 +200,7 @@ runtime beside the executable on Windows and Linux, and includes the MSVC
 runtime DLLs on Windows. CMake's installed Linux application locates its
 bundled Slint runtime relative to the executable. Linux also requires the
 xkbcommon development package.
+The prebuilt Slint SDK also needs the libinput runtime (``libinput10`` on Ubuntu).
 
 The manually dispatched ``Publish MediaCap release`` workflow builds Windows
 and Linux packages for x64 and ARM64 in the public ``still-standing88/media-cap``

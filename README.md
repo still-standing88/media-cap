@@ -48,7 +48,7 @@ AudioPix GUI downloads are archives containing the application and its runtime f
 
 - Windows downloads require a matching x64 or ARM64 Windows system. When using the shared library, keep `MediaCap.dll` beside your application or on its DLL search path.
 - Linux downloads target Ubuntu 24.04 and require glibc 2.39 or newer, a compatible GNU C++ runtime, and the X11, ALSA, and PipeWire runtime libraries. Screen and window capture require an accessible X11 display. System and process audio capture require a running PipeWire session.
-- AudioPix on Linux also needs xkbcommon, Fontconfig, and OpenGL/EGL runtime libraries. The Slint runtime is bundled in the GUI archive.
+- AudioPix on Linux also needs xkbcommon, Fontconfig, libinput (`libinput10` on Ubuntu), and OpenGL/EGL runtime libraries. The Slint runtime is bundled in the GUI archive.
 - See the [build guide](docs/building.rst) for development dependencies, platform setup, and macOS source builds.
 
 ## Building

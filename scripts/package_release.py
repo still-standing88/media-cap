@@ -75,7 +75,7 @@ def package_gui(package, assets, platform, arch, slint_root):
         f"Run bin/{filename} with the other files in bin kept alongside it.\n"
         "Third-party notices are in share/licenses.\n"
         "Linux requires Ubuntu 24.04 or newer, X11, ALSA, PipeWire, xkbcommon,\n"
-        "Fontconfig and OpenGL/EGL runtime libraries.\n",
+        "Fontconfig, libinput (libinput10) and OpenGL/EGL runtime libraries.\n",
         encoding="utf-8",
     )
     make_archive(staging, assets, windows)
