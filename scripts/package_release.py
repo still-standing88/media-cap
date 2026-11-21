@@ -40,7 +40,50 @@ def add_linux_static_dependencies(package, triplet, vcpkg, destination):
     )
 
 
-def package_build(package, assets, triplet, configuration, linkage, vcpkg):
+def make_archive(staging, assets, windows):
+    if windows:
+        shutil.make_archive(str(assets / staging.name), "zip", staging.parent, staging.name)
+    else:
+        subprocess.run(["tar", "-czf", str(assets / (staging.name + ".tar.gz")),
+                        "-C", str(staging.parent), staging.name], check=True)
+
+
+def package_gui(package, assets, platform, arch, slint_root):
+    windows = platform == "windows"
+    staging = assets.parent / f"AudioPix-{platform}-{arch}"
+    binary_dir = staging / "bin"
+    binary_dir.mkdir(parents=True, exist_ok=False)
+    filename = "AudioPix.exe" if windows else "AudioPix"
+    shutil.copy2(require(package / "bin" / filename), binary_dir)
+    # MediaCap and FFmpeg are linked statically; Slint remains a bundled runtime.
+    if (package / "bin/MediaCap.dll").exists():
+        raise SystemExit("AudioPix releases must use static MediaCap")
+    if windows:
+        require(package / "bin/slint_cpp.dll")
+        require(package / "bin/msvcp140.dll")
+        require(package / "bin/vcruntime140.dll")
+        for runtime in sorted((package / "bin").glob("*.dll")):
+            shutil.copy2(runtime, binary_dir)
+    else:
+        shutil.copy2(require(package / "bin/libslint_cpp.so"), binary_dir)
+    shutil.copytree(package / "share/licenses/MediaCap", staging / "share/licenses/MediaCap")
+    require(slint_root / "licenses/LICENSE.md")
+    require(slint_root / "licenses/THIRDPARTY.md")
+    shutil.copytree(slint_root / "licenses", staging / "share/licenses/Slint")
+    (staging / "README.txt").write_text(
+        "AudioPix desktop recorder\n\n"
+        f"Run bin/{filename} with the other files in bin kept alongside it.\n"
+        "Third-party notices are in share/licenses.\n"
+        "Linux requires Ubuntu 24.04 or newer, X11, ALSA, PipeWire, xkbcommon,\n"
+        "Fontconfig and OpenGL/EGL runtime libraries.\n",
+        encoding="utf-8",
+    )
+    make_archive(staging, assets, windows)
+
+
+def package_build(package, assets, triplet, configuration, linkage, vcpkg, slint_root=None):
+    if slint_root is not None and (configuration != "Release" or linkage != "static"):
+        raise SystemExit("GUI release assets require a Release static build")
     windows = triplet.endswith("-windows-static")
     arch = triplet.split("-", 1)[0]
     platform = "windows" if windows else "linux"
@@ -68,11 +111,7 @@ def package_build(package, assets, triplet, configuration, linkage, vcpkg):
     else:
         require(staging / "lib/libMediaCap.so")
 
-    if windows:
-        shutil.make_archive(str(assets / stem), "zip", staging.parent, stem)
-    else:
-        subprocess.run(["tar", "-czf", str(assets / (stem + ".tar.gz")),
-                        "-C", str(staging.parent), stem], check=True)
+    make_archive(staging, assets, windows)
 
     if configuration == "Release" and linkage == "static":
         filename = "MediaCap.exe" if windows else "MediaCap"
@@ -88,6 +127,8 @@ def package_build(package, assets, triplet, configuration, linkage, vcpkg):
                     output.write(f"{source.relative_to(notices).as_posix()}\n\n".encode())
                     output.write(source.read_bytes())
                     output.write(b"\n\n")
+        if slint_root is not None:
+            package_gui(package, assets, platform, arch, slint_root)
 
 
 def main():
@@ -98,10 +139,15 @@ def main():
     parser.add_argument("--linkage", required=True, choices=("shared", "static"))
     parser.add_argument("--build-root", type=Path, default=Path("build-ci"))
     parser.add_argument("--vcpkg", type=Path, default=Path(".ci-vcpkg"))
+    parser.add_argument("--gui", action="store_true", help="Also package the AudioPix GUI and Slint runtime")
+    parser.add_argument("--slint-root", type=Path, help="Slint SDK prefix containing its license notices")
     args = parser.parse_args()
+    if args.gui and args.slint_root is None:
+        parser.error("--gui requires --slint-root")
     assets = args.build_root / "release-assets"
     assets.mkdir(exist_ok=False)
-    package_build(args.build_root / "package", assets, args.platform, args.configuration, args.linkage, args.vcpkg)
+    package_build(args.build_root / "package", assets, args.platform, args.configuration, args.linkage,
+                  args.vcpkg, args.slint_root if args.gui else None)
 
 
 if __name__ == "__main__":

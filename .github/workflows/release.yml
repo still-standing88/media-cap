@@ -16,6 +16,13 @@ jobs:
     steps:
       - name: Require the main branch
         run: test "$GITHUB_REF" = refs/heads/main
+      - name: Require the public release repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          test "$GH_REPO" = still-standing88/media-cap
+          test "$(gh api "repos/$GH_REPO" --jq .visibility)" = public
       - name: Check for an existing source tag
         env:
           GH_TOKEN: ${{ github.token }}
@@ -25,6 +32,14 @@ jobs:
           if tagged_commit=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha 2>/dev/null); then
             test "$tagged_commit" = "$GITHUB_SHA"
           fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Check release packaging and README download links
+        run: python tests/release/test_packaging.py -v
 
   windows:
     needs: check
@@ -69,9 +84,12 @@ jobs:
               done
               test -s "MediaCap-cli-$os-$arch$exe"
               test -s "MediaCap-cli-$os-$arch-notices.txt"
+              test -s "AudioPix-$os-$arch$archive"
             done
           done
-          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 20
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 24
+          # Artifact transfers discard executable permissions on direct binaries.
+          chmod +x MediaCap-cli-linux-x64 MediaCap-cli-linux-arm64
       - name: Publish and retain only the latest release
         shell: bash
         run: |
@@ -85,7 +103,8 @@ jobs:
           if ! grep -Fqx "$RELEASE_TAG"$'\tfalse' <<< "$releases"; then
             if ! grep -Fqx "$RELEASE_TAG"$'\ttrue' <<< "$releases"; then
               gh release create "$RELEASE_TAG" --verify-tag --draft \
-                --title "MediaCap ${RELEASE_TAG#v}" --notes "Initial MediaCap release for Windows and Linux."
+                --title "MediaCap ${RELEASE_TAG#v}" \
+                --notes "MediaCap libraries (shared and static), standalone static CLI executables, and AudioPix desktop packages for Windows and Linux, on x64 and ARM64. Linux CLI downloads need chmod +x. Extract the full AudioPix archive and run the executable in bin."
             fi
             gh release upload "$RELEASE_TAG" release-assets/* --clobber
             gh release edit "$RELEASE_TAG" --draft=false --latest

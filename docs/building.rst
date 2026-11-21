@@ -188,8 +188,22 @@ select static MediaCap. Static and shared here describe the MediaCap linkage.
 Run ``AudioPix`` from the build output or install it with
 ``--install-prefix <path>`` and run it from the installed ``bin`` directory.
 Keep the Slint SDK available at the build-time location on Linux and macOS
-when using its shared library. Windows builds copy the Slint DLL alongside
-the executable. Linux also requires the xkbcommon development package.
+when using its shared library with Meson or SCons, and on macOS with CMake.
+CMake installs the Slint
+runtime beside the executable on Windows and Linux, and includes the MSVC
+runtime DLLs on Windows. CMake's installed Linux application locates its
+bundled Slint runtime relative to the executable. Linux also requires the
+xkbcommon development package.
+
+The manually dispatched ``Publish MediaCap release`` workflow builds Windows
+and Linux packages for x64 and ARM64 in the public ``still-standing88/media-cap``
+repository. It publishes Release shared, Release static, and Debug shared
+library archives, direct CLI executables, and AudioPix GUI archives. The CLI
+and GUI link MediaCap and FFmpeg statically; GUI archives also include the
+Slint runtime and its notices. Extract the complete GUI archive and launch
+``bin/AudioPix.exe`` on Windows or ``bin/AudioPix`` on Linux. Linux CLI downloads
+need ``chmod +x`` before use. The workflow checks that the README's download
+links match the generated release asset names before compiling.
 
 .. _Slint releases: https://github.com/slint-ui/slint/releases
 

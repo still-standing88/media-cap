@@ -7,6 +7,7 @@ param(
     [string]$BuildRoot = 'build-ci',
     [int]$Jobs = 2,
     [switch]$LibraryOnly,
+    [switch]$Gui,
     [switch]$PythonBindings,
     [switch]$DotNetBindings,
     [switch]$Offline
@@ -33,6 +34,7 @@ try {
         '--vcpkg-root',$VcpkgRoot,'--triplet',$Triplet,'--build-dir',$objectRoot,'--install-prefix',$stage,
         '--tests','--jobs',"$Jobs")
     if (-not $LibraryOnly) { $options += '--cli' }
+    if ($Gui) { $options += @('--gui', '--slint-root', (Join-Path $build 'slint')) }
     if ($Offline) { $options += '--offline' }
     if ($PythonBindings) { $options += '--python' }
     if ($DotNetBindings) { $options += '--dotnet' }

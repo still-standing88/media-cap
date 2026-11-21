@@ -4,7 +4,7 @@ You shouldn't have to download half a Gigabyte of an application just to record 
 
 I started this project back in the summer of 2024, but I wasn't able to finish it due to the tremendous amount of workload I had from university and being involved in a startup.
 
-Half of the credit goes to Claude for helping me finally put the final caps on this thing so I can actually get out there to the world. Testing is still needed across platforms, but for now a ready-to-use version for Windows is here.
+Half of the credit goes to Claude for helping me finally put the final caps on this thing so I can actually get out there to the world. Testing is still needed across platforms; the release workflow builds ready-to-use Windows and Linux downloads.
 
 This library doesn't just capture processes for audio but virtually anything, anything you could think of that a computer inputs or outputs.
 
@@ -32,7 +32,9 @@ MediaCap is available as a library with its own API, as a CLI tool, and as the A
 
 Downloads will be available from the [latest release](https://github.com/still-standing88/media-cap/releases/latest) when the public release is ready. Choose the asset for your CPU architecture.
 
-The CLI downloads are standalone executables. On Linux, mark the downloaded file executable with `chmod +x MediaCap-cli-linux-x64` or `chmod +x MediaCap-cli-linux-arm64`.
+The CLI downloads are direct executables (`.exe` on Windows), with MediaCap and FFmpeg linked statically. On Linux, mark the downloaded file executable with `chmod +x MediaCap-cli-linux-x64` or `chmod +x MediaCap-cli-linux-arm64`.
+
+AudioPix GUI downloads are archives containing the application and its runtime files. Extract the whole archive and run `bin/AudioPix.exe` on Windows or `bin/AudioPix` on Linux. Keep the bundled files together.
 
 | Download | Windows | Linux | macOS |
 | --- | --- | --- | --- |
@@ -40,12 +42,13 @@ The CLI downloads are standalone executables. On Linux, mark the downloaded file
 | Library, Release static | [x64][w-rst-x] · [ARM64][w-rst-a] | [x64][l-rst-x] · [ARM64][l-rst-a] | [Not yet available][latest] |
 | Library, Debug shared | [x64][w-dsh-x] · [ARM64][w-dsh-a] | [x64][l-dsh-x] · [ARM64][l-dsh-a] | [Not yet available][latest] |
 | CLI | [x64][w-cli-x] · [ARM64][w-cli-a] | [x64][l-cli-x] · [ARM64][l-cli-a] | [Not yet available][latest] |
-| GUI | [See releases][latest] | [See releases][latest] | [See releases][latest] |
+| AudioPix GUI | [x64][w-gui-x] · [ARM64][w-gui-a] | [x64][l-gui-x] · [ARM64][l-gui-a] | [Not yet available][latest] |
 
 ## Requirements
 
 - Windows downloads require a matching x64 or ARM64 Windows system. When using the shared library, keep `MediaCap.dll` beside your application or on its DLL search path.
 - Linux downloads target Ubuntu 24.04 and require glibc 2.39 or newer, a compatible GNU C++ runtime, and the X11, ALSA, and PipeWire runtime libraries. Screen and window capture require an accessible X11 display. System and process audio capture require a running PipeWire session.
+- AudioPix on Linux also needs xkbcommon, Fontconfig, and OpenGL/EGL runtime libraries. The Slint runtime is bundled in the GUI archive.
 - See the [build guide](docs/building.rst) for development dependencies, platform setup, and macOS source builds.
 
 ## Building
@@ -93,3 +96,7 @@ MediaCap is licensed under the GNU Lesser General Public License, version 3 or l
 [w-cli-a]: https://github.com/still-standing88/media-cap/releases/latest/download/MediaCap-cli-windows-arm64.exe
 [l-cli-x]: https://github.com/still-standing88/media-cap/releases/latest/download/MediaCap-cli-linux-x64
 [l-cli-a]: https://github.com/still-standing88/media-cap/releases/latest/download/MediaCap-cli-linux-arm64
+[w-gui-x]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-windows-x64.zip
+[w-gui-a]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-windows-arm64.zip
+[l-gui-x]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-linux-x64.tar.gz
+[l-gui-a]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-linux-arm64.tar.gz

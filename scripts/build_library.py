@@ -38,6 +38,9 @@ def build_cmake(options, deps, path, run):
         args.append(f"-DPython_EXECUTABLE={options.python_executable}")
     if options.gui and options.slint_root:
         args.append(f"-DSlint_ROOT={options.slint_root}")
+        compiler = options.slint_root / "bin" / ("slint-compiler.exe" if os.name == "nt" else "slint-compiler")
+        if compiler.is_file():
+            args.append(f"-DSLINT_COMPILER={compiler}")
     if deps.vcpkg_root:
         args.extend((f"-DMEDIACAP_VCPKG_ROOT={deps.vcpkg_root}", f"-DVCPKG_TARGET_TRIPLET={deps.triplet}"))
     else:

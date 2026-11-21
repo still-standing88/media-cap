@@ -4,6 +4,12 @@ AudioPix is a Slint desktop recorder for MediaCap. Build it with the optional
 `--gui` switch. See the [build guide](../docs/building.rst#build-audiopix) for the
 external Slint SDK and the CMake, Meson, and SCons options.
 
+Download prebuilt packages for [Windows x64][windows-x64],
+[Windows ARM64][windows-arm64], [Linux x64][linux-x64], or
+[Linux ARM64][linux-arm64] from the latest release. Extract the complete
+archive, then run `bin/AudioPix.exe` on Windows or `bin/AudioPix` on Linux.
+Keep the bundled Slint and runtime files beside the executable.
+
 - In **Session**, add or select a session and choose **Add source**. Sources
   include cameras, monitors, audio inputs, output loopback, application windows,
   and process audio. Each session can record one video source and mix multiple
@@ -35,3 +41,8 @@ On Linux, MediaCap screen and window capture uses X11, keyboard shortcuts need
 read access to keyboard input devices, and the tray needs a desktop with
 StatusNotifierItem support. Process capture requires an enabled and supported
 FlexAudio backend.
+
+[windows-x64]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-windows-x64.zip
+[windows-arm64]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-windows-arm64.zip
+[linux-x64]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-linux-x64.tar.gz
+[linux-arm64]: https://github.com/still-standing88/media-cap/releases/latest/download/AudioPix-linux-arm64.tar.gz

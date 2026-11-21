@@ -31,6 +31,10 @@ if(WIN32)
                 "$<TARGET_FILE:slint_cpp-shared>" "$<TARGET_FILE_DIR:AudioPix>"
             VERBATIM)
         install(FILES "$<TARGET_FILE:slint_cpp-shared>" DESTINATION ${CMAKE_INSTALL_BINDIR})
+        # The SDK runtime uses the dynamic MSVC runtime even with static MediaCap.
+        set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+        include(InstallRequiredSystemLibraries)
+        install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif()
 elseif(APPLE)
     foreach(framework ApplicationServices Carbon CoreGraphics IOKit)
@@ -43,8 +47,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
     target_link_libraries(AudioPix PRIVATE PkgConfig::XKBCOMMON)
-    set_target_properties(AudioPix PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
-        INSTALL_RPATH_USE_LINK_PATH ON)
+    set_target_properties(AudioPix PROPERTIES
+        INSTALL_RPATH "$ORIGIN;$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+    if(TARGET slint_cpp-shared)
+        install(FILES "$<TARGET_FILE:slint_cpp-shared>" DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
 endif()
 
 install(TARGETS AudioPix RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

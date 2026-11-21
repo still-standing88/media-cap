@@ -17,8 +17,12 @@ dotnet_bindings=()
 if [[ ${DOTNET_BINDINGS:-false} == true ]]; then
   dotnet_bindings=(--dotnet)
 fi
+gui=()
+if [[ ${GUI:-false} == true ]]; then
+  gui=(--gui --slint-root "$PWD/build-ci/slint")
+fi
 bash build.sh --frontend "$FRONTEND" "--$mode" "--$LIBRARY" --triplet "$VCPKG_TRIPLET" \
-  "${cli[@]}" "${python_bindings[@]}" "${dotnet_bindings[@]}" --tests --jobs "$jobs" --build-dir build-ci/objects --install-prefix build-ci/package
+  "${cli[@]}" "${gui[@]}" "${python_bindings[@]}" "${dotnet_bindings[@]}" --tests --jobs "$jobs" --build-dir build-ci/objects --install-prefix build-ci/package
 if [[ ${PYTHON_BINDINGS:-false} == true ]]; then
   platlib=$(python bindings/python/python_config.py platlib)
   PYTHONPATH="$PWD/build-ci/package/$platlib" python tests/integration/python_bindings.py

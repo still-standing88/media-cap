@@ -1,4 +1,4 @@
-name: Linux library and CLI
+name: Linux library, CLI, and GUI
 
 on:
   push:
@@ -99,6 +99,14 @@ jobs:
           cc --version
           c++ --version
           rustc --version
+      - name: Install the pinned Slint SDK for AudioPix
+        if: inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static'
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform.triplet }}
+        run: |
+          sudo apt-get install -y --no-install-recommends libxkbcommon-dev libfontconfig1 libgl1 libegl1
+          python scripts/install_slint.py --platform "$PLATFORM"
       - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         if: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build && !inputs.cli_only }}
         with:
@@ -114,6 +122,7 @@ jobs:
           DOTNET_BINDINGS: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build && !inputs.cli_only }}
           JOBS: '2'
           LIBRARY_ONLY: ${{ inputs.release_build && matrix.library == 'shared' }}
+          GUI: ${{ inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static' }}
         run: bash scripts/ci_unix.sh
       - name: Report Linux binary requirements
         shell: bash
@@ -128,16 +137,20 @@ jobs:
               awk '/Name: (GLIBC|GLIBCXX|CXXABI)_/ { print $3 }' |
               sort -Vu
           done | tee build-ci/runtime-requirements.txt
-      - name: Package the CLI
-        if: inputs.cli_only
+      - name: Verify static CLI dependencies and optionally archive it
+        if: inputs.cli_only || (inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static')
         shell: bash
         env:
           PACKAGE: MediaCap-cli-${{ matrix.platform.triplet }}
+          CLI_ONLY: ${{ inputs.cli_only }}
         run: |
           cli=build-ci/package/bin/MediaCap
           if readelf --dynamic "$cli" | grep -E 'NEEDED.*\[(libMediaCap|libav(codec|format|util)|libsw(scale|resample))'; then
             echo 'The CLI unexpectedly requires a MediaCap or FFmpeg shared library.' >&2
             exit 1
+          fi
+          if [[ "$CLI_ONLY" != true ]]; then
+            exit 0
           fi
           staging="build-ci/$PACKAGE"
           mkdir -p "$staging/share/licenses"
@@ -161,7 +174,25 @@ jobs:
           PLATFORM: ${{ matrix.platform.triplet }}
           CONFIGURATION: ${{ matrix.configuration }}
           LINKAGE: ${{ matrix.library }}
-        run: python scripts/package_release.py --platform "$PLATFORM" --configuration "$CONFIGURATION" --linkage "$LINKAGE"
+        run: |
+          options=()
+          if [[ "$CONFIGURATION" == Release && "$LINKAGE" == static ]]; then
+            options=(--gui --slint-root build-ci/slint)
+          fi
+          python scripts/package_release.py --platform "$PLATFORM" --configuration "$CONFIGURATION" --linkage "$LINKAGE" "${options[@]}"
+      - name: Verify the relocated AudioPix package
+        if: inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static'
+        shell: bash
+        env:
+          ARCH: ${{ matrix.platform.triplet }}
+        run: |
+          stem="AudioPix-linux-${ARCH%-linux}"
+          unpack=$(mktemp -d)
+          tar -xzf "build-ci/release-assets/$stem.tar.gz" -C "$unpack"
+          env -u LD_LIBRARY_PATH ldd "$unpack/$stem/bin/AudioPix" | tee build-ci/gui-runtime-requirements.txt
+          ! grep -F 'not found' build-ci/gui-runtime-requirements.txt
+          env -u LD_LIBRARY_PATH ldd "$unpack/$stem/bin/libslint_cpp.so" | tee -a build-ci/gui-runtime-requirements.txt
+          ! grep -F 'not found' build-ci/gui-runtime-requirements.txt
       - name: Verify the extracted static library
         if: inputs.release_build && matrix.library == 'static'
         shell: bash

@@ -1,4 +1,4 @@
-name: Windows library and CLI
+name: Windows library, CLI, and GUI
 
 on:
   push:
@@ -113,6 +113,12 @@ jobs:
         if: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build }}
         with:
           dotnet-version: '10.0.x'
+      - name: Install the pinned Slint SDK for AudioPix
+        if: inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static'
+        shell: pwsh
+        env:
+          PLATFORM: ${{ matrix.platform.triplet }}
+        run: python scripts/install_slint.py --platform $env:PLATFORM
       - name: Build, test, and check the installed CLI
         shell: pwsh
         env:
@@ -124,6 +130,7 @@ jobs:
           PYTHON_BINDINGS: ${{ matrix.configuration == 'Release' && !inputs.release_build }}
           DOTNET_BINDINGS: ${{ matrix.configuration == 'Release' && matrix.library == 'shared' && !inputs.release_build }}
           LIBRARY_ONLY: ${{ inputs.release_build && matrix.library == 'shared' }}
+          GUI: ${{ inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static' }}
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
@@ -135,7 +142,7 @@ jobs:
           ./scripts/win/ci_windows.ps1 -Frontend $env:FRONTEND -Configuration $env:CONFIGURATION `
             -Library $env:LIBRARY -VcpkgRoot .ci-vcpkg -Triplet $env:VCPKG_TRIPLET `
             -LibraryOnly:($env:LIBRARY_ONLY -eq 'true') -PythonBindings:($env:PYTHON_BINDINGS -eq 'true') `
-            -DotNetBindings:($env:DOTNET_BINDINGS -eq 'true')
+            -DotNetBindings:($env:DOTNET_BINDINGS -eq 'true') -Gui:($env:GUI -eq 'true')
       - name: Stage release assets
         if: inputs.release_build
         shell: pwsh
@@ -143,7 +150,25 @@ jobs:
           PLATFORM: ${{ matrix.platform.triplet }}
           CONFIGURATION: ${{ matrix.configuration }}
           LINKAGE: ${{ matrix.library }}
-        run: python scripts/package_release.py --platform $env:PLATFORM --configuration $env:CONFIGURATION --linkage $env:LINKAGE
+        run: |
+          $options = @('--platform', $env:PLATFORM, '--configuration', $env:CONFIGURATION, '--linkage', $env:LINKAGE)
+          if ($env:CONFIGURATION -eq 'Release' -and $env:LINKAGE -eq 'static') {
+            $options += @('--gui', '--slint-root', 'build-ci/slint')
+          }
+          python scripts/package_release.py @options
+      - name: Verify the relocated AudioPix runtime
+        if: inputs.release_build && matrix.configuration == 'Release' && matrix.library == 'static'
+        shell: pwsh
+        env:
+          PLATFORM: ${{ matrix.platform.triplet }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $arch = $env:PLATFORM.Split('-')[0]
+          $stem = "AudioPix-windows-$arch"
+          $unpack = Join-Path $env:RUNNER_TEMP ([guid]::NewGuid().ToString())
+          Expand-Archive "build-ci/release-assets/$stem.zip" $unpack
+          python -c "import ctypes, pathlib, sys; p = pathlib.Path(sys.argv[1]).resolve(); ctypes.WinDLL(str(p / 'slint_cpp.dll'))" "$unpack/$stem/bin"
       - name: Upload release assets
         if: inputs.release_build
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
